@@ -67,6 +67,32 @@ class SoundController {
     }
   }
 
+  // Soft collapse sound
+  playIslandCollapse() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(540, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(280, this.ctx.currentTime + 0.08);
+
+      gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.08);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.08);
+    } catch {
+      // Ignored
+    }
+  }
+
   // Camera shutter / Snipaste capture sound
   playShutter() {
     if (!this.enabled) return;

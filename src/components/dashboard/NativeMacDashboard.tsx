@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import type {
   DashboardTab,
   Agent,
   TaskItem,
   SavedConfig,
   AccountCredentials,
-  WorkspaceContextData,
-  GitFileInfo,
-  GitCommitNode,
-  GitBranchItem,
   ArenaResult,
-  RealQuotasState,
   ChatMessage,
   ErrorDiagnosis,
 } from '../../types/dashboard';
 import { sounds } from '../../utils/soundEffects';
+
+// Custom Domain Hooks
+import { useLiveQuotas } from '../../hooks/useLiveQuotas';
+import { useWorkspaceGit } from '../../hooks/useWorkspaceGit';
+import { useWorkspaceContext } from '../../hooks/useWorkspaceContext';
 
 // Navigation & Modals
 import { DashboardSidebar } from './navigation/DashboardSidebar';
@@ -64,9 +64,23 @@ export const NativeMacDashboard: React.FC = () => {
   const [simulatorUrl, setSimulatorUrl] = useState<string>('http://localhost:8081');
   const [metroStatus, setMetroStatus] = useState<{ isRunning: boolean; port: number; type: string }>({ isRunning: false, port: 8081, type: 'none' });
 
-  // Workspace Path & Context
+  // Workspace Path & Custom Hooks
   const [currentWorkspace, setCurrentWorkspace] = useState<string>('/Users/eric/Desktop/Applicacion Sidebar');
-  const [workspaceContext, setWorkspaceContext] = useState<WorkspaceContextData | null>(null);
+  const { workspaceContext, loadWorkspaceDeepContext } = useWorkspaceContext(currentWorkspace);
+  const { realQuotas, providerStatuses, fetchLiveTelemetry } = useLiveQuotas();
+  const {
+    gitStatus,
+    gitCommits,
+    gitBranches,
+    selectedCommit,
+    setSelectedCommit,
+    commitMessage,
+    setCommitMessage,
+    isGeneratingCommit,
+    loadGitStatus,
+    checkoutBranch,
+    generateAICommitMessage,
+  } = useWorkspaceGit(currentWorkspace);
 
   // Chat & Console
   const [promptInput, setPromptInput] = useState<string>('');
@@ -93,25 +107,13 @@ export const NativeMacDashboard: React.FC = () => {
   const [scratchpadText, setScratchpadText] = useState<string>('');
   const [isSavingScratchpad, setIsSavingScratchpad] = useState<boolean>(false);
 
-  // Git & GitFlow
-  const [gitStatus, setGitStatus] = useState<{ isGit: boolean; branch: string; files: GitFileInfo[] }>({
-    isGit: true,
-    branch: 'main',
-    files: [],
-  });
-  const [gitCommits, setGitCommits] = useState<GitCommitNode[]>([]);
-  const [gitBranches, setGitBranches] = useState<GitBranchItem[]>([]);
-  const [selectedCommit, setSelectedCommit] = useState<GitCommitNode | null>(null);
-  const [commitMessage, setCommitMessage] = useState<string>('');
-  const [isGeneratingCommit, setIsGeneratingCommit] = useState<boolean>(false);
-
   // Swarm Pipeline
   const [selectedSwarmAgentIds, setSelectedSwarmAgentIds] = useState<string[]>(['agent-gemini', 'agent-claude', 'agent-openai']);
   const [swarmPrompt, setSwarmPrompt] = useState<string>('');
   const [isExecutingSwarm, setIsExecutingSwarm] = useState<boolean>(false);
   const [swarmProgressLogs, setSwarmProgressLogs] = useState<string[]>([]);
 
-  // Credentials & Telemetry
+  // Credentials
   const [credentials, setCredentials] = useState<AccountCredentials>({
     claudeApiKey: '',
     openaiApiKey: '',
@@ -119,34 +121,10 @@ export const NativeMacDashboard: React.FC = () => {
     openrouterApiKey: '',
   });
 
-  const [providerStatuses, setProviderStatuses] = useState<{
-    claude?: { isLinked: boolean; percent: number; error?: string; maxBadge?: string };
-    openai?: { isLinked: boolean; percent: number; error?: string; maxBadge?: string };
-    deepseek?: { isLinked: boolean; balance?: string; error?: string };
-    openrouter?: { isLinked: boolean; credits?: number; error?: string };
-  }>({});
-
   const [isTestingProvider, setIsTestingProvider] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState<boolean>(false);
 
-  const [realQuotas, setRealQuotas] = useState<RealQuotasState>({
-    geminiFiveHour: 99,
-    geminiFiveHourText: 'Recarga en 4 horas, 59 minutos.',
-    geminiWeekly: 17,
-    geminiWeeklyText: 'Recarga en 3 dias, 12 horas.',
-    credits: 2016,
-    plan: 'Google AI Pro',
-    enableOverages: true,
-    claudeFiveHour: 100,
-    claudeWeekly: 100,
-    gptFiveHour: 100,
-    claudeLinked: false,
-    openaiLinked: false,
-    deepseekLinked: false,
-    openrouterLinked: false,
-  });
-
-  // Prompt complexity check
+  // Prompt complexity detector
   useEffect(() => {
     const p = promptInput.toLowerCase();
     const isComplex = p.length > 35 && (
@@ -158,8 +136,8 @@ export const NativeMacDashboard: React.FC = () => {
     setIsComplexityDetected(isComplex);
   }, [promptInput]);
 
-  // Check Metro / Expo Status
-  const checkMetroStatus = useCallback(async () => {
+  // Check Metro Status
+  const checkMetroStatus = async () => {
     if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
       try {
         const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string, p?: number) => Promise<{ isRunning: boolean; port: number; type: string }> } } }).require('electron');
@@ -176,7 +154,7 @@ export const NativeMacDashboard: React.FC = () => {
         // fallback
       }
     }
-  }, [simulatorUrl]);
+  };
 
   // Keyboard shortcut listener for Cmd + K
   useEffect(() => {
@@ -194,7 +172,7 @@ export const NativeMacDashboard: React.FC = () => {
   }, []);
 
   // Disk Auto-save
-  const autoSaveToDisk = useCallback((updatedConfig: SavedConfig, updatedAgents: Agent[], updatedTasks: TaskItem[]) => {
+  const autoSaveToDisk = (updatedConfig: SavedConfig, updatedAgents: Agent[], updatedTasks: TaskItem[]) => {
     if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
       try {
         const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { send: (ch: string, data: unknown) => void } } }).require('electron');
@@ -209,176 +187,7 @@ export const NativeMacDashboard: React.FC = () => {
         // fallback
       }
     }
-  }, []);
-
-  // Load Scratchpad Content
-  const loadScratchpad = useCallback(async () => {
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string) => Promise<string> } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          const content = await electron.ipcRenderer.invoke('get-scratchpad');
-          if (content) setScratchpadText(content);
-        }
-      } catch (err) {
-        console.error('Error loading scratchpad:', err);
-      }
-    }
-  }, []);
-
-  // Save Scratchpad
-  const handleSaveScratchpad = async (text: string) => {
-    setScratchpadText(text);
-    setIsSavingScratchpad(true);
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string, c: string) => Promise<unknown> } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          await electron.ipcRenderer.invoke('save-scratchpad', text);
-        }
-      } catch (err) {
-        console.error('Error saving scratchpad:', err);
-      }
-    }
-    setTimeout(() => setIsSavingScratchpad(false), 600);
   };
-
-  // Load Git Graph
-  const loadGitGraph = useCallback(async (dir: string) => {
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string, p: string) => Promise<{ success: boolean; commits: GitCommitNode[] }> } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          const res = await electron.ipcRenderer.invoke('get-git-graph', dir);
-          if (res && res.commits) setGitCommits(res.commits);
-        }
-      } catch (err) {
-        console.error('Error fetching git graph:', err);
-      }
-    }
-  }, []);
-
-  // Load Git Branches
-  const loadGitBranches = useCallback(async (dir: string) => {
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string, p: string) => Promise<{ success: boolean; branches: GitBranchItem[] }> } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          const res = await electron.ipcRenderer.invoke('get-git-branches', dir);
-          if (res && res.branches) setGitBranches(res.branches);
-        }
-      } catch (err) {
-        console.error('Error fetching git branches:', err);
-      }
-    }
-  }, []);
-
-  // Load Git Status
-  const loadGitStatus = useCallback(async (dir: string) => {
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string, p: string) => Promise<{ isGit: boolean; branch: string; files: GitFileInfo[] }> } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          const res = await electron.ipcRenderer.invoke('get-workspace-git-status', dir);
-          if (res) setGitStatus(res);
-        }
-      } catch (err) {
-        console.error('Error fetching git status:', err);
-      }
-    }
-    loadGitGraph(dir);
-    loadGitBranches(dir);
-  }, [loadGitGraph, loadGitBranches]);
-
-  // Load Deep Workspace Context
-  const loadWorkspaceDeepContext = useCallback(async (dirPath: string) => {
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string, p: string) => Promise<WorkspaceContextData> } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          const ctx = await electron.ipcRenderer.invoke('get-workspace-context', dirPath);
-          if (ctx) setWorkspaceContext(ctx);
-        }
-      } catch (err) {
-        console.error('Error loading workspace context:', err);
-      }
-    }
-    loadGitStatus(dirPath);
-    checkMetroStatus();
-  }, [loadGitStatus, checkMetroStatus]);
-
-  // Telemetry Polling
-  const updateQuotasFromPayload = useCallback((data: {
-    antigravity?: { isLinked: boolean; plan: string; availableCredits: number; enableOverages: boolean; geminiModels: { fiveHourRemaining: number; weeklyRemaining: number; fiveHourRefreshText: string; weeklyRefreshText: string }; claudeGptModels: { fiveHourRemaining: number; weeklyRemaining: number } };
-    claude?: { isLinked: boolean; percent: number; maxBadge: string; error?: string };
-    openai?: { isLinked: boolean; percent: number; maxBadge: string; error?: string };
-    deepseek?: { isLinked: boolean; balance?: string; error?: string };
-    openrouter?: { isLinked: boolean; credits?: number; error?: string };
-  }) => {
-    if (!data) return;
-
-    if (data.antigravity) {
-      setRealQuotas(prev => ({
-        ...prev,
-        geminiFiveHour: data.antigravity?.geminiModels?.fiveHourRemaining ?? prev.geminiFiveHour,
-        geminiFiveHourText: data.antigravity?.geminiModels?.fiveHourRefreshText || prev.geminiFiveHourText,
-        geminiWeekly: data.antigravity?.geminiModels?.weeklyRemaining ?? prev.geminiWeekly,
-        geminiWeeklyText: data.antigravity?.geminiModels?.weeklyRefreshText || prev.geminiWeeklyText,
-        credits: data.antigravity?.availableCredits ?? prev.credits,
-        plan: data.antigravity?.plan || prev.plan,
-        enableOverages: data.antigravity?.enableOverages ?? prev.enableOverages,
-        claudeFiveHour: data.claude?.percent ?? (data.antigravity?.claudeGptModels?.fiveHourRemaining ?? 100),
-        claudeWeekly: data.antigravity?.claudeGptModels?.weeklyRemaining ?? 100,
-        gptFiveHour: data.openai?.percent ?? 100,
-        claudeLinked: data.claude?.isLinked ?? false,
-        openaiLinked: data.openai?.isLinked ?? false,
-        deepseekLinked: data.deepseek?.isLinked ?? false,
-        openrouterLinked: data.openrouter?.isLinked ?? false,
-      }));
-    }
-
-    setProviderStatuses({
-      claude: data.claude,
-      openai: data.openai,
-      deepseek: data.deepseek,
-      openrouter: data.openrouter,
-    });
-  }, []);
-
-  const fetchLiveTelemetry = useCallback(async () => {
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string) => Promise<unknown> } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          const data = (await electron.ipcRenderer.invoke('get-real-quotas')) as Parameters<typeof updateQuotasFromPayload>[0];
-          updateQuotasFromPayload(data);
-        }
-      } catch {
-        // fallback
-      }
-    }
-  }, [updateQuotasFromPayload]);
-
-  useEffect(() => {
-    fetchLiveTelemetry();
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { on: (ch: string, cb: (e: unknown, data: unknown) => void) => void; removeAllListeners: (ch: string) => void } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          electron.ipcRenderer.on('quotas-updated', (_event, data) => {
-            updateQuotasFromPayload(data as Parameters<typeof updateQuotasFromPayload>[0]);
-          });
-          return () => {
-            electron.ipcRenderer.removeAllListeners('quotas-updated');
-          };
-        }
-      } catch {
-        // fallback
-      }
-    }
-    const interval = setInterval(fetchLiveTelemetry, 2500);
-    return () => clearInterval(interval);
-  }, [fetchLiveTelemetry, updateQuotasFromPayload]);
 
   // Initial Data Load
   useEffect(() => {
@@ -403,6 +212,9 @@ export const NativeMacDashboard: React.FC = () => {
             }
             const creds = (await electron.ipcRenderer.invoke('get-credentials')) as AccountCredentials;
             if (creds) setCredentials(creds);
+
+            const scratch = (await electron.ipcRenderer.invoke('get-scratchpad')) as string;
+            if (scratch && typeof scratch === 'string') setScratchpadText(scratch);
           }
         } catch (err) {
           console.error('Error loading state:', err);
@@ -410,9 +222,26 @@ export const NativeMacDashboard: React.FC = () => {
       }
     };
     loadState();
-    loadScratchpad();
     loadWorkspaceDeepContext(currentWorkspace);
-  }, [currentWorkspace, loadScratchpad, loadWorkspaceDeepContext]);
+    loadGitStatus(currentWorkspace);
+  }, [currentWorkspace, loadWorkspaceDeepContext, loadGitStatus]);
+
+  // Save Scratchpad
+  const handleSaveScratchpad = async (text: string) => {
+    setScratchpadText(text);
+    setIsSavingScratchpad(true);
+    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
+      try {
+        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string, c: string) => Promise<unknown> } } }).require('electron');
+        if (electron && electron.ipcRenderer) {
+          await electron.ipcRenderer.invoke('save-scratchpad', text);
+        }
+      } catch (err) {
+        console.error('Error saving scratchpad:', err);
+      }
+    }
+    setTimeout(() => setIsSavingScratchpad(false), 600);
+  };
 
   // Select Workspace Dialog
   const handleSelectWorkspace = async () => {
@@ -425,6 +254,7 @@ export const NativeMacDashboard: React.FC = () => {
           if (chosenDir) {
             setCurrentWorkspace(chosenDir);
             loadWorkspaceDeepContext(chosenDir);
+            loadGitStatus(chosenDir);
             sounds.playIslandExpand();
             setChatMessages(prev => [
               ...prev,
@@ -512,7 +342,7 @@ export const NativeMacDashboard: React.FC = () => {
         ...prev,
         {
           sender: 'Orquestador Multi-Agente',
-          text: `Tarea compleja detectada. Desplegando colaboracion de ${activeSwarm.length} agentes especializados:\n${activeSwarm.map((a, i) => `› Fase ${i + 1}: ${a.name} (${a.role})`).join('\n')}`,
+          text: `Tarea compleja detectada. Desplegando colaboración de ${activeSwarm.length} agentes especializados:\n${activeSwarm.map((a, i) => `› Fase ${i + 1}: ${a.name} (${a.role})`).join('\n')}`,
           time: now,
           isAgent: true,
           isSwarmBadge: true,
@@ -526,7 +356,7 @@ export const NativeMacDashboard: React.FC = () => {
         assignedAgentId: 'swarm-pipeline',
         status: 'in-progress',
         timestamp: now,
-        logs: [`Orquestacion multi-agente en ${currentWorkspace}: ${activeSwarm.map(a => a.name).join(' -> ')}`],
+        logs: [`Orquestación multi-agente en ${currentWorkspace}: ${activeSwarm.map(a => a.name).join(' -> ')}`],
       };
 
       const currentTasks = [newTask, ...tasks];
@@ -560,7 +390,7 @@ export const NativeMacDashboard: React.FC = () => {
             const finishedTasks = currentTasks.map(t => t.id === newTaskId ? {
               ...t,
               status: 'done' as const,
-              logs: swarmResult.stepLogs || ['Ejecucion Swarm completada'],
+              logs: swarmResult.stepLogs || ['Ejecución Swarm completada'],
             } : t);
 
             setTasks(finishedTasks);
@@ -738,23 +568,6 @@ export const NativeMacDashboard: React.FC = () => {
     setIsLoadingFile(false);
   };
 
-  // Checkout Git Branch
-  const handleCheckoutBranch = async (branchName: string) => {
-    sounds.playHoverTick();
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string, data: unknown) => Promise<{ success: boolean }> } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          await electron.ipcRenderer.invoke('git-checkout-branch', { branch: branchName, cwd: currentWorkspace });
-          sounds.playIslandExpand();
-          loadGitStatus(currentWorkspace);
-        }
-      } catch (err) {
-        console.error('Error switching branch:', err);
-      }
-    }
-  };
-
   // Start Feature Branch
   const handleStartFeature = async (e: React.FormEvent, featureName: string) => {
     e.preventDefault();
@@ -810,30 +623,6 @@ export const NativeMacDashboard: React.FC = () => {
     }
   };
 
-  // Suggest Commit Message with AI
-  const handleGenerateAICommitMessage = () => {
-    if (gitStatus.files.length === 0) {
-      setCommitMessage('chore: update project files and sync dependencies');
-      return;
-    }
-    setIsGeneratingCommit(true);
-    sounds.playHoverTick();
-
-    const changedNames = gitStatus.files.map(f => f.file).join(', ');
-    const hasFix = changedNames.toLowerCase().includes('fix') || changedNames.toLowerCase().includes('bug');
-    const hasFeat = changedNames.toLowerCase().includes('component') || changedNames.toLowerCase().includes('dash');
-
-    setTimeout(() => {
-      let prefix = 'refactor';
-      if (hasFeat) prefix = 'feat';
-      else if (hasFix) prefix = 'fix';
-
-      setCommitMessage(`${prefix}: integrate improvements in ${gitStatus.files.slice(0, 3).map(f => f.file.split('/').pop()).join(', ')}`);
-      setIsGeneratingCommit(false);
-      sounds.playIslandExpand();
-    }, 400);
-  };
-
   // Export Session to Markdown
   const handleExportSession = async () => {
     sounds.playHoverTick();
@@ -856,7 +645,7 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
           });
           if (res && res.success) {
             sounds.playIslandExpand();
-            alert(`Sesion exportada con exito en:\n${res.filePath}`);
+            alert(`Sesión exportada con éxito en:\n${res.filePath}`);
           }
         }
       } catch (err) {
@@ -1138,10 +927,10 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
               setCommitMessage={setCommitMessage}
               isGeneratingCommit={isGeneratingCommit}
               onRefreshGitStatus={() => loadGitStatus(currentWorkspace)}
-              onCheckoutBranch={handleCheckoutBranch}
+              onCheckoutBranch={checkoutBranch}
               onStartFeature={handleStartFeature}
               onCreateRelease={handleCreateRelease}
-              onGenerateAICommitMessage={handleGenerateAICommitMessage}
+              onGenerateAICommitMessage={generateAICommitMessage}
               onRunCommand={handleRunCommand}
               onSendPrompt={handleSendPrompt}
             />
