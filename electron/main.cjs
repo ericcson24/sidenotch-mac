@@ -268,10 +268,22 @@ ipcMain.handle('read-workspace-file', async (event, filePath) => {
   }
 });
 
-// Save file to workspace
-ipcMain.handle('save-workspace-file', async (event, { filePath, content }) => {
+// Open Workspace Folder in macOS Finder
+ipcMain.handle('open-in-finder', async (event, dirPath) => {
   try {
-    fs.writeFileSync(filePath, content, 'utf8');
+    const target = dirPath || process.cwd();
+    shell.openPath(target);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+// Open Workspace in Visual Studio Code / Cursor
+ipcMain.handle('open-in-editor', async (event, dirPath) => {
+  try {
+    const target = dirPath || process.cwd();
+    exec(`code "${target}" || cursor "${target}"`);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };

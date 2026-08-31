@@ -53,6 +53,7 @@ interface ToolsHubTabProps {
   // Agents context
   onCreateRule: (e: React.FormEvent, name: string, content: string) => void;
   onSendPrompt: (e?: React.FormEvent, overrideText?: string) => void;
+  onOpenMobileSimulator?: () => void;
 }
 
 export const ToolsHubTab: React.FC<ToolsHubTabProps> = ({
@@ -87,31 +88,32 @@ export const ToolsHubTab: React.FC<ToolsHubTabProps> = ({
   onRunSwarmPipeline,
   onCreateRule,
   onSendPrompt,
+  onOpenMobileSimulator,
 }) => {
   const [activeSubTool, setActiveSubTool] = useState<'hub' | 'arena' | 'debugger' | 'swarm' | 'code-viewer' | 'scratchpad' | 'agents-context'>('hub');
 
   const tools = [
     {
-      id: 'arena' as const,
-      title: 'Arena de Modelos (4x)',
-      description: 'Haz que Gemini, Claude, GPT-4o y DeepSeek compitan en directo para ver cuál da la mejor respuesta.',
-      tag: 'Comparador',
-      color: 'from-purple-500/20 to-indigo-500/20 border-purple-500/30',
+      id: 'debugger' as const,
+      title: 'Depurador de Errores',
+      description: 'Pega cualquier error de compilación o terminal y la IA te dirá exactamente qué archivo y línea arreglar.',
+      tag: 'Diagnóstico',
+      color: 'border-rose-500/30 hover:border-rose-500/60',
       icon: (
-        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current text-purple-400" strokeWidth="2">
-          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current text-rose-400" strokeWidth="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
       ),
     },
     {
-      id: 'debugger' as const,
-      title: 'Depurador de Errores',
-      description: 'Pega cualquier error de tu código o terminal y la IA te dirá exactamente qué archivo y línea arreglar.',
-      tag: 'Diagnóstico',
-      color: 'from-rose-500/20 to-orange-500/20 border-rose-500/30',
+      id: 'arena' as const,
+      title: 'Arena de Modelos (4x)',
+      description: 'Haz que Gemini, Claude, GPT-4o y DeepSeek compitan en directo para ver cuál da la mejor respuesta.',
+      tag: 'Comparador',
+      color: 'border-purple-500/30 hover:border-purple-500/60',
       icon: (
-        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current text-rose-400" strokeWidth="2">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current text-purple-400" strokeWidth="2">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
         </svg>
       ),
     },
@@ -120,7 +122,7 @@ export const ToolsHubTab: React.FC<ToolsHubTabProps> = ({
       title: 'Equipo Multi-Agente (Swarm)',
       description: 'Pon a trabajar a varios agentes a la vez: uno diseña la arquitectura, otro programa y otro hace pruebas.',
       tag: 'Pipeline',
-      color: 'from-sky-500/20 to-blue-500/20 border-sky-500/30',
+      color: 'border-sky-500/30 hover:border-sky-500/60',
       icon: (
         <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current text-sky-400" strokeWidth="2">
           <polygon points="12 2 2 7 12 12 22 7 12 2" />
@@ -130,11 +132,25 @@ export const ToolsHubTab: React.FC<ToolsHubTabProps> = ({
       ),
     },
     {
+      id: 'mobile' as const,
+      title: 'Simulador Móvil iPhone',
+      description: 'Previsualiza tu web o app en un iPhone virtual y audita áreas táctiles, textos y zonas seguras de iOS.',
+      tag: 'Diseño',
+      color: 'border-blue-500/30 hover:border-blue-500/60',
+      action: onOpenMobileSimulator,
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current text-blue-400" strokeWidth="2">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+          <line x1="12" y1="18" x2="12.01" y2="18" />
+        </svg>
+      ),
+    },
+    {
       id: 'code-viewer' as const,
       title: 'Visor de Archivos',
       description: 'Explora y revisa los archivos de tu proyecto y pide a la IA que los refactorice en un clic.',
       tag: 'Explorador',
-      color: 'from-emerald-500/20 to-teal-500/20 border-emerald-500/30',
+      color: 'border-emerald-500/30 hover:border-emerald-500/60',
       icon: (
         <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current text-emerald-400" strokeWidth="2">
           <polyline points="16 18 22 12 16 6" />
@@ -147,7 +163,7 @@ export const ToolsHubTab: React.FC<ToolsHubTabProps> = ({
       title: 'Bloc de Notas Inteligente',
       description: 'Apunta ideas, tareas y esquemas técnicos con autoguardado automático en disco.',
       tag: 'Notas',
-      color: 'from-amber-500/20 to-yellow-500/20 border-amber-500/30',
+      color: 'border-amber-500/30 hover:border-amber-500/60',
       icon: (
         <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current text-amber-400" strokeWidth="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -163,7 +179,7 @@ export const ToolsHubTab: React.FC<ToolsHubTabProps> = ({
       title: 'Reglas del Proyecto (.agents)',
       description: 'Configura directivas y normas de estilo para que todos los agentes sigan tus pautas.',
       tag: 'Reglas',
-      color: 'from-pink-500/20 to-rose-500/20 border-pink-500/30',
+      color: 'border-pink-500/30 hover:border-pink-500/60',
       icon: (
         <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current text-pink-400" strokeWidth="2">
           <circle cx="12" cy="12" r="10" />
@@ -190,10 +206,10 @@ export const ToolsHubTab: React.FC<ToolsHubTabProps> = ({
           </button>
 
           <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/10 text-xs font-medium">
-            {tools.map(t => (
+            {tools.filter(t => t.id !== 'mobile').map(t => (
               <button
                 key={t.id}
-                onClick={() => { setActiveSubTool(t.id); sounds.playHoverTick(); }}
+                onClick={() => { setActiveSubTool(t.id as typeof activeSubTool); sounds.playHoverTick(); }}
                 className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                   activeSubTool === t.id
                     ? 'bg-[#0071e3] text-white font-bold'
@@ -213,37 +229,46 @@ export const ToolsHubTab: React.FC<ToolsHubTabProps> = ({
           <div>
             <h2 className="text-xl font-bold text-white tracking-tight">Herramientas Pro de Desarrollo</h2>
             <p className="text-xs text-neutral-400 mt-0.5">
-              Utilidades avanzadas para comparar modelos, depurar errores y coordinar agentes en tu proyecto.
+              Utilidades directas para diagnosticar fallos, simular en móviles, comparar modelos y organizar agentes.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             {tools.map(t => (
               <div
                 key={t.id}
-                onClick={() => { setActiveSubTool(t.id); sounds.playHoverTick(); }}
-                className={`p-5 rounded-2xl bg-gradient-to-br ${t.color} border hover:border-white/30 transition-all cursor-pointer space-y-3 group shadow-xl active:scale-[0.99]`}
+                onClick={() => {
+                  if (t.action) {
+                    t.action();
+                  } else {
+                    setActiveSubTool(t.id as typeof activeSubTool);
+                  }
+                  sounds.playHoverTick();
+                }}
+                className={`p-5 rounded-2xl bg-[#13141c] border ${t.color} transition-all cursor-pointer space-y-3 group shadow-xl active:scale-[0.99] flex flex-col justify-between`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 group-hover:scale-110 transition-transform">
-                    {t.icon}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 group-hover:scale-105 transition-transform">
+                      {t.icon}
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10.5px] font-mono text-neutral-300 font-semibold">
+                      {t.tag}
+                    </span>
                   </div>
-                  <span className="px-2 py-0.5 rounded-md bg-white/10 text-[11px] font-mono text-neutral-300 font-semibold">
-                    {t.tag}
-                  </span>
-                </div>
 
-                <div>
-                  <h3 className="text-sm font-bold text-white group-hover:text-sky-300 transition-colors">
-                    {t.title}
-                  </h3>
-                  <p className="text-xs text-neutral-300/80 leading-relaxed mt-1">
-                    {t.description}
-                  </p>
+                  <div>
+                    <h3 className="text-sm font-bold text-white group-hover:text-sky-300 transition-colors">
+                      {t.title}
+                    </h3>
+                    <p className="text-xs text-neutral-400 leading-relaxed mt-1">
+                      {t.description}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="pt-2 flex items-center gap-1.5 text-xs font-semibold text-sky-400 group-hover:translate-x-1 transition-transform">
-                  <span>Abrir herramienta</span>
+                  <span>Abrir</span>
                   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>

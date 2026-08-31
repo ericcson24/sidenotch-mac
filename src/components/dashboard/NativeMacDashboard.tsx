@@ -924,6 +924,7 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
               onRunSwarmPipeline={handleRunSwarmPipeline}
               onCreateRule={handleCreateRule}
               onSendPrompt={handleSendPrompt}
+              onOpenMobileSimulator={() => setShowMobileSimulator(true)}
             />
           )}
 
