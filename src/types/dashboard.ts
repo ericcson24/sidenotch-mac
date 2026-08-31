@@ -9,6 +9,7 @@ export type DashboardTab =
   | 'agents-context'
   | 'models'
   | 'linking'
+  | 'tools'
   | 'tasks'
   | 'settings';
 

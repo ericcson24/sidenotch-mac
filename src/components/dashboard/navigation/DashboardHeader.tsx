@@ -1,18 +1,13 @@
 import React from 'react';
-import type { WorkspaceContextData, DashboardTab } from '../../../types/dashboard';
-import { sounds } from '../../../utils/soundEffects';
+import type { WorkspaceContextData } from '../../../types/dashboard';
 
 interface DashboardHeaderProps {
   currentWorkspace: string;
   workspaceContext: WorkspaceContextData | null;
-  gitBranch: string;
-  gitModifiedCount: number;
-  rulesCount: number;
   credits: number;
   showMobileSimulator: boolean;
   isMetroRunning: boolean;
   onSelectWorkspace: () => void;
-  onNavigateTab: (tab: DashboardTab) => void;
   onToggleMobileSimulator: () => void;
   onOpenCommandPalette: () => void;
 }
@@ -20,100 +15,71 @@ interface DashboardHeaderProps {
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   currentWorkspace,
   workspaceContext,
-  gitBranch,
-  gitModifiedCount,
-  rulesCount,
   credits,
   showMobileSimulator,
   isMetroRunning,
   onSelectWorkspace,
-  onNavigateTab,
   onToggleMobileSimulator,
   onOpenCommandPalette,
 }) => {
+  const folderName = workspaceContext?.folderName || currentWorkspace.split('/').filter(Boolean).pop() || 'Proyecto';
+
   return (
-    <div className="h-[58px] w-full flex items-center justify-between px-6 border-b border-white/[0.08] bg-[#131317]/60 shrink-0 backdrop-blur-md [-webkit-app-region:drag]">
-      {/* Workspace Path Picker & Tech Stack Badge */}
-      <div className="flex items-center gap-2.5 [-webkit-app-region:no-drag]">
+    <header className="h-14 w-full flex items-center justify-between px-6 border-b border-white/[0.08] bg-[#111115]/80 shrink-0 backdrop-blur-xl [-webkit-app-region:drag]">
+      {/* 1. Left: Workspace Selector */}
+      <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
         <button
           onClick={onSelectWorkspace}
-          title="Cambiar carpeta de proyecto activa"
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-mono text-neutral-200 transition-all cursor-pointer shadow-sm active:scale-95"
+          title="Haz clic para cambiar la carpeta de tu proyecto"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs text-neutral-200 transition-all cursor-pointer shadow-sm active:scale-95 group"
         >
-          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-sky-400 text-sky-400">
-            <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
-          </svg>
-          <span className="font-semibold text-white max-w-[180px] truncate">
-            {workspaceContext?.folderName || currentWorkspace.split('/').pop()}
-          </span>
-          <span className="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-bold">Cambiar</span>
+          <div className="w-5 h-5 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            </svg>
+          </div>
+          <span className="font-semibold text-white max-w-[200px] truncate">{folderName}</span>
+          <span className="text-[10px] text-neutral-400 group-hover:text-white transition-colors">Cambiar</span>
         </button>
 
-        {/* Tech Stack Badge */}
-        <div className="px-2.5 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-[11px] font-mono text-purple-300 flex items-center gap-1.5">
-          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-          </svg>
-          <span>{workspaceContext?.techStack || 'React + TypeScript'}</span>
-        </div>
-
-        {/* Git Branch Badge */}
-        <button
-          onClick={() => { onNavigateTab('git-manager'); sounds.playHoverTick(); }}
-          className="px-2.5 py-1 rounded-xl bg-sky-500/15 border border-sky-500/30 text-[11px] font-mono text-sky-300 flex items-center gap-1.5 cursor-pointer hover:bg-sky-500/25 transition-colors"
-        >
-          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
-            <circle cx="18" cy="18" r="3" />
-            <circle cx="6" cy="6" r="3" />
-            <path d="M13 6h3a2 2 0 0 1 2 2v7" />
-            <line x1="6" y1="9" x2="6" y2="21" />
-          </svg>
-          <span>{gitBranch || 'main'}</span>
-          {gitModifiedCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
-        </button>
-
-        {/* .agents Status Pill */}
-        <button
-          onClick={() => { onNavigateTab('agents-context'); sounds.playHoverTick(); }}
-          className="px-2.5 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-mono text-emerald-300 flex items-center gap-1.5 cursor-pointer hover:bg-emerald-500/25 transition-colors"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>{rulesCount} Reglas</span>
-        </button>
+        <span className="w-1 h-1 rounded-full bg-white/20" />
+        <span className="text-xs text-neutral-400 font-medium">Asistente de Desarrollo Mac</span>
       </div>
 
-      {/* Right Action Tools */}
-      <div className="flex items-center gap-2.5 [-webkit-app-region:no-drag]">
-        {/* Mobile / Expo Inspector Trigger Button */}
+      {/* 2. Right: Friendly Actions */}
+      <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
+        {/* Mobile View Button */}
         <button
           onClick={onToggleMobileSimulator}
-          className={`px-3 py-1 rounded-xl border text-[11px] font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer active:scale-95 ${
             showMobileSimulator
-              ? 'bg-[#0071e3] border-[#0071e3] text-white font-bold shadow-md shadow-blue-500/20'
-              : 'bg-white/[0.06] hover:bg-white/[0.12] border-white/10 text-neutral-300'
+              ? 'bg-[#0071e3] text-white shadow-md shadow-blue-500/20'
+              : 'bg-white/[0.05] hover:bg-white/[0.1] text-neutral-300 border border-white/10'
           }`}
         >
           <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
             <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
             <line x1="12" y1="18" x2="12.01" y2="18" />
           </svg>
-          <span>Simulador Móvil</span>
+          <span>Vista Móvil</span>
           {isMetroRunning && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
         </button>
 
+        {/* Command Search Shortcut */}
         <button
           onClick={onOpenCommandPalette}
-          className="px-2.5 py-1 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] font-mono text-neutral-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs text-neutral-300 transition-colors cursor-pointer active:scale-95"
         >
-          <span>Paleta</span>
-          <kbd className="px-1 py-0.5 rounded bg-black/40 text-[9px] font-mono text-neutral-400">⌘K</kbd>
+          <span>Buscar</span>
+          <kbd className="px-1.5 py-0.5 rounded-md bg-black/50 text-[10px] font-mono text-neutral-400 border border-white/10">⌘K</kbd>
         </button>
 
-        <div className="px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-xs font-mono text-emerald-300 flex items-center gap-1.5 shadow-sm">
+        {/* Credits Badge */}
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs font-semibold text-emerald-400 shadow-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          <span>{credits.toLocaleString()} Creditos IA</span>
+          <span>{credits.toLocaleString()} créditos</span>
         </div>
       </div>
-    </div>
+    </header>
   );
 };

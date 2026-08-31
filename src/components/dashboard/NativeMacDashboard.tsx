@@ -24,15 +24,9 @@ import { MobileSimulatorModal } from './modals/MobileSimulatorModal';
 
 // Tabs
 import { ConsoleTab } from './tabs/ConsoleTab';
-import { ArenaTab } from './tabs/ArenaTab';
-import { DebuggerTab } from './tabs/DebuggerTab';
-import { CodeViewerTab } from './tabs/CodeViewerTab';
-import { GitManagerTab } from './tabs/GitManagerTab';
-import { ScratchpadTab } from './tabs/ScratchpadTab';
-import { SwarmTab } from './tabs/SwarmTab';
-import { AgentsContextTab } from './tabs/AgentsContextTab';
 import { ModelsQuotaTab } from './tabs/ModelsQuotaTab';
-import { LinkingTab } from './tabs/LinkingTab';
+import { GitManagerTab } from './tabs/GitManagerTab';
+import { ToolsHubTab } from './tabs/ToolsHubTab';
 import { SettingsTab } from './tabs/SettingsTab';
 
 const DEFAULT_CONFIG: SavedConfig = {
@@ -67,7 +61,7 @@ export const NativeMacDashboard: React.FC = () => {
   // Workspace Path & Custom Hooks
   const [currentWorkspace, setCurrentWorkspace] = useState<string>('/Users/eric/Desktop/Applicacion Sidebar');
   const { workspaceContext, loadWorkspaceDeepContext } = useWorkspaceContext(currentWorkspace);
-  const { realQuotas, providerStatuses, fetchLiveTelemetry } = useLiveQuotas();
+  const { realQuotas, fetchLiveTelemetry } = useLiveQuotas();
   const {
     gitStatus,
     gitCommits,
@@ -114,14 +108,13 @@ export const NativeMacDashboard: React.FC = () => {
   const [swarmProgressLogs, setSwarmProgressLogs] = useState<string[]>([]);
 
   // Credentials
-  const [credentials, setCredentials] = useState<AccountCredentials>({
+  const [_credentials, setCredentials] = useState<AccountCredentials>({
     claudeApiKey: '',
     openaiApiKey: '',
     deepseekApiKey: '',
     openrouterApiKey: '',
   });
 
-  const [isTestingProvider, setIsTestingProvider] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState<boolean>(false);
 
   // Prompt complexity detector
@@ -308,7 +301,7 @@ export const NativeMacDashboard: React.FC = () => {
     }
   };
 
-  // Prompt Handler (with Auto-Swarm detection)
+  // Prompt Handler
   const handleSendPrompt = async (e?: React.FormEvent, overrideText?: string) => {
     if (e) e.preventDefault();
     const userMsg = (overrideText || promptInput).trim();
@@ -548,7 +541,7 @@ export const NativeMacDashboard: React.FC = () => {
     sounds.playHoverTick();
     setSelectedFileForViewer(filePath);
     setIsLoadingFile(true);
-    setActiveTab('code-viewer');
+    setActiveTab('tools');
 
     if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
       try {
@@ -751,26 +744,6 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
     setSwarmPrompt('');
   };
 
-  // Test & Save API Provider
-  const handleTestAndSaveProvider = async (provider: 'claude' | 'openai' | 'deepseek' | 'openrouter') => {
-    setIsTestingProvider(provider);
-    sounds.playHoverTick();
-
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string, data: unknown) => Promise<unknown> } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          await electron.ipcRenderer.invoke('save-and-test-credentials', credentials);
-          await fetchLiveTelemetry();
-          sounds.playIslandExpand();
-        }
-      } catch {
-        // fallback
-      }
-    }
-    setIsTestingProvider(null);
-  };
-
   // Audit Mobile UI
   const handleAuditMobileUI = (deviceSpec: string, orientation: string) => {
     sounds.playHoverTick();
@@ -794,8 +767,10 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
     temperature: 0.2,
   };
 
+  const isToolsActive = ['tools', 'arena', 'debugger', 'swarm', 'code-viewer', 'scratchpad', 'agents-context'].includes(activeTab);
+
   return (
-    <div className="w-screen h-screen bg-[#0a0a0c]/98 text-[#f5f5f7] font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Helvetica_Neue',sans-serif] flex select-none overflow-hidden rounded-2xl border border-white/[0.09] shadow-2xl backdrop-blur-2xl">
+    <div className="w-screen h-screen bg-[#0a0a0c] text-[#f5f5f7] font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Helvetica_Neue',sans-serif] flex select-none overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl backdrop-blur-2xl">
       {/* 0. Command Palette Modal (Cmd + K) */}
       <CommandPaletteModal
         isOpen={showCommandPalette}
@@ -816,13 +791,10 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
         onAuditMobileUI={handleAuditMobileUI}
       />
 
-      {/* 1. Left Sidebar Navigation */}
+      {/* 1. Left Sidebar Navigation (5 Clean Sections) */}
       <DashboardSidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        agentsCount={agents.length}
-        gitModifiedCount={gitStatus.files.length}
-        rulesCount={workspaceContext?.agentsCustomizations?.rules?.length || 0}
         geminiFiveHour={realQuotas.geminiFiveHour}
         credits={realQuotas.credits}
       />
@@ -833,14 +805,10 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
         <DashboardHeader
           currentWorkspace={currentWorkspace}
           workspaceContext={workspaceContext}
-          gitBranch={gitStatus.branch}
-          gitModifiedCount={gitStatus.files.length}
-          rulesCount={workspaceContext?.agentsCustomizations?.rules?.length || 0}
           credits={realQuotas.credits}
           showMobileSimulator={showMobileSimulator}
           isMetroRunning={metroStatus.isRunning}
           onSelectWorkspace={handleSelectWorkspace}
-          onNavigateTab={tab => setActiveTab(tab)}
           onToggleMobileSimulator={() => {
             setShowMobileSimulator(prev => !prev);
             sounds.playHoverTick();
@@ -850,8 +818,8 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
         />
 
         {/* Main Tabs Canvas */}
-        <div className="flex-1 p-6 overflow-y-auto space-y-6">
-          {/* TAB 1: CONSOLE */}
+        <main className="flex-1 p-6 overflow-y-auto space-y-6">
+          {/* TAB 1: ASISTENTE IA (CONSOLE) */}
           {activeTab === 'console' && (
             <ConsoleTab
               agents={agents}
@@ -875,46 +843,15 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
             />
           )}
 
-          {/* TAB 2: ARENA */}
-          {activeTab === 'arena' && (
-            <ArenaTab
-              arenaPrompt={arenaPrompt}
-              setArenaPrompt={setArenaPrompt}
-              isExecutingArena={isExecutingArena}
-              arenaResults={arenaResults}
-              arenaExecutionTime={arenaExecutionTime}
-              onRunArena={handleRunArena}
+          {/* TAB 2: CUOTAS Y MODELOS */}
+          {activeTab === 'models' && (
+            <ModelsQuotaTab
+              realQuotas={realQuotas}
+              onRefreshQuotas={fetchLiveTelemetry}
             />
           )}
 
-          {/* TAB 3: DEBUGGER */}
-          {activeTab === 'debugger' && (
-            <DebuggerTab
-              currentWorkspace={currentWorkspace}
-              errorInput={errorInput}
-              setErrorInput={setErrorInput}
-              errorDiagnosis={errorDiagnosis}
-              onDiagnoseError={handleDiagnoseError}
-              onOpenFileInViewer={handleOpenFileInViewer}
-              onSendPrompt={handleSendPrompt}
-            />
-          )}
-
-          {/* TAB 4: CODE VIEWER */}
-          {activeTab === 'code-viewer' && (
-            <CodeViewerTab
-              workspaceContext={workspaceContext}
-              selectedFileForViewer={selectedFileForViewer}
-              fileContent={fileContent}
-              isLoadingFile={isLoadingFile}
-              copySuccess={copySuccess}
-              setCopySuccess={setCopySuccess}
-              onOpenFileInViewer={handleOpenFileInViewer}
-              onSendPrompt={handleSendPrompt}
-            />
-          )}
-
-          {/* TAB 5: GITFLOW & GRAPH */}
+          {/* TAB 3: PROYECTO & GIT */}
           {activeTab === 'git-manager' && (
             <GitManagerTab
               currentWorkspace={currentWorkspace}
@@ -936,59 +873,44 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
             />
           )}
 
-          {/* TAB 6: SCRATCHPAD */}
-          {activeTab === 'scratchpad' && (
-            <ScratchpadTab
+          {/* TAB 4: HERRAMIENTAS PRO (ARENA, DEBUGGER, SWARM, CODE VIEWER, SCRATCHPAD, RULES) */}
+          {isToolsActive && (
+            <ToolsHubTab
+              currentWorkspace={currentWorkspace}
+              workspaceContext={workspaceContext}
+              agents={agents}
+              arenaPrompt={arenaPrompt}
+              setArenaPrompt={setArenaPrompt}
+              isExecutingArena={isExecutingArena}
+              arenaResults={arenaResults}
+              arenaExecutionTime={arenaExecutionTime}
+              onRunArena={handleRunArena}
+              errorInput={errorInput}
+              setErrorInput={setErrorInput}
+              errorDiagnosis={errorDiagnosis}
+              onDiagnoseError={handleDiagnoseError}
+              selectedFileForViewer={selectedFileForViewer}
+              fileContent={fileContent}
+              isLoadingFile={isLoadingFile}
+              copySuccess={copySuccess}
+              setCopySuccess={setCopySuccess}
+              onOpenFileInViewer={handleOpenFileInViewer}
               scratchpadText={scratchpadText}
               isSavingScratchpad={isSavingScratchpad}
               onSaveScratchpad={handleSaveScratchpad}
-              onSendPrompt={handleSendPrompt}
-            />
-          )}
-
-          {/* TAB 7: SWARM */}
-          {activeTab === 'swarm' && (
-            <SwarmTab
-              agents={agents}
               selectedSwarmAgentIds={selectedSwarmAgentIds}
               setSelectedSwarmAgentIds={setSelectedSwarmAgentIds}
               swarmPrompt={swarmPrompt}
               setSwarmPrompt={setSwarmPrompt}
               isExecutingSwarm={isExecutingSwarm}
               swarmProgressLogs={swarmProgressLogs}
-              workspaceContext={workspaceContext}
               onRunSwarmPipeline={handleRunSwarmPipeline}
-            />
-          )}
-
-          {/* TAB 8: AGENTS CONTEXT */}
-          {activeTab === 'agents-context' && (
-            <AgentsContextTab
-              workspaceContext={workspaceContext}
               onCreateRule={handleCreateRule}
+              onSendPrompt={handleSendPrompt}
             />
           )}
 
-          {/* TAB 9: MODELS & USAGE */}
-          {activeTab === 'models' && (
-            <ModelsQuotaTab
-              realQuotas={realQuotas}
-              onRefreshQuotas={fetchLiveTelemetry}
-            />
-          )}
-
-          {/* TAB 10: LINKING */}
-          {activeTab === 'linking' && (
-            <LinkingTab
-              credentials={credentials}
-              setCredentials={setCredentials}
-              providerStatuses={providerStatuses}
-              isTestingProvider={isTestingProvider}
-              onTestAndSaveProvider={handleTestAndSaveProvider}
-            />
-          )}
-
-          {/* TAB 11: SETTINGS */}
+          {/* TAB 5: AJUSTES */}
           {activeTab === 'settings' && (
             <SettingsTab
               config={config}
@@ -1001,7 +923,7 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
               }}
             />
           )}
-        </div>
+        </main>
       </div>
     </div>
   );

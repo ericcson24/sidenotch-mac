@@ -5,9 +5,6 @@ import { sounds } from '../../../utils/soundEffects';
 interface DashboardSidebarProps {
   activeTab: DashboardTab;
   setActiveTab: (tab: DashboardTab) => void;
-  agentsCount: number;
-  gitModifiedCount: number;
-  rulesCount: number;
   geminiFiveHour: number;
   credits: number;
 }
@@ -15,9 +12,6 @@ interface DashboardSidebarProps {
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   activeTab,
   setActiveTab,
-  agentsCount,
-  gitModifiedCount,
-  rulesCount,
   geminiFiveHour,
   credits,
 }) => {
@@ -26,231 +20,148 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     sounds.playHoverTick();
   };
 
+  const navItems = [
+    {
+      id: 'console' as DashboardTab,
+      label: 'Asistente IA',
+      description: 'Chat y generación de código',
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'models' as DashboardTab,
+      label: 'Cuotas y Modelos',
+      description: 'Gemini, Claude y GPT',
+      badge: `${geminiFiveHour}%`,
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+      ),
+    },
+    {
+      id: 'git-manager' as DashboardTab,
+      label: 'Proyecto & Git',
+      description: 'Archivos y cambios',
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
+          <circle cx="18" cy="18" r="3" />
+          <circle cx="6" cy="6" r="3" />
+          <path d="M13 6h3a2 2 0 0 1 2 2v7" />
+          <line x1="6" y1="9" x2="6" y2="21" />
+        </svg>
+      ),
+    },
+    {
+      id: 'tools' as DashboardTab,
+      label: 'Herramientas Pro',
+      description: 'Arena 4x, Swarm, Depurador',
+      badge: '5',
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </svg>
+      ),
+    },
+    {
+      id: 'settings' as DashboardTab,
+      label: 'Ajustes',
+      description: 'Notch y cuentas',
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      ),
+    },
+  ];
+
+  // Map sub-tabs into tools if active
+  const isToolsActive = ['arena', 'swarm', 'debugger', 'code-viewer', 'scratchpad', 'agents-context'].includes(activeTab) || activeTab === 'tools';
+
   return (
-    <div className="w-[215px] bg-[#121216]/90 border-r border-white/[0.08] flex flex-col justify-between shrink-0 p-3 select-none text-[13px] backdrop-blur-xl">
+    <nav className="w-60 bg-[#0f0f13]/95 border-r border-white/[0.08] flex flex-col justify-between shrink-0 p-3 select-none backdrop-blur-2xl">
       <div className="space-y-4">
-        {/* Traffic Lights Area */}
-        <div className="flex items-center gap-2 px-1 pt-1 pb-2 [-webkit-app-region:drag]">
-          <div className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:brightness-90 cursor-pointer shadow-sm" />
-          <div className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:brightness-90 cursor-pointer shadow-sm" />
-          <div className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] hover:brightness-90 cursor-pointer shadow-sm" />
+        {/* macOS Traffic Lights + App Title */}
+        <div className="flex items-center justify-between px-2 pt-1 pb-2 border-b border-white/[0.06] [-webkit-app-region:drag]">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] shadow-sm" />
+            <div className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] shadow-sm" />
+            <div className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] shadow-sm" />
+          </div>
+          <span className="text-[11px] font-bold tracking-wider text-neutral-400 uppercase font-mono">SideNotch</span>
         </div>
 
-        {/* Section: Agentes Dev */}
+        {/* Primary Clean Navigation List */}
         <div className="space-y-1">
-          <div className="px-2.5 text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Agentes Dev</div>
+          {navItems.map(item => {
+            const isSelected = item.id === 'tools' ? isToolsActive : activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleTabClick(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all cursor-pointer text-left ${
+                  isSelected
+                    ? 'bg-[#0071e3] text-white font-semibold shadow-lg shadow-blue-500/25'
+                    : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-1 rounded-lg ${isSelected ? 'text-white' : 'text-neutral-400'}`}>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <div className="text-[13px] leading-tight">{item.label}</div>
+                    <div className={`text-[10px] leading-tight mt-0.5 ${isSelected ? 'text-blue-100' : 'text-neutral-500'}`}>
+                      {item.description}
+                    </div>
+                  </div>
+                </div>
 
-          {/* 1. Consola & Dev */}
-          <button
-            onClick={() => handleTabClick('console')}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-normal transition-all text-left cursor-pointer ${
-              activeTab === 'console'
-                ? 'bg-[#0071e3] text-white font-medium shadow-md shadow-blue-500/20'
-                : 'text-[#d1d1d6] hover:bg-white/[0.06]'
-            }`}
-          >
-            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current opacity-90" strokeWidth="2">
-              <polyline points="4 17 10 11 4 5" />
-              <line x1="12" y1="19" x2="20" y2="19" />
-            </svg>
-            <span>Consola & Dev</span>
-          </button>
-
-          {/* 2. Arena Multi-Modelos */}
-          <button
-            onClick={() => handleTabClick('arena')}
-            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] font-normal transition-all text-left cursor-pointer ${
-              activeTab === 'arena'
-                ? 'bg-[#0071e3] text-white font-medium shadow-md shadow-blue-500/20'
-                : 'text-[#d1d1d6] hover:bg-white/[0.06]'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current opacity-90" strokeWidth="2">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-              <span>Arena de Modelos</span>
-            </div>
-            <span className="px-1.5 py-0.2 rounded-md bg-purple-500/20 text-purple-300 text-[10px] font-mono">4x</span>
-          </button>
-
-          {/* 3. Depurador IA */}
-          <button
-            onClick={() => handleTabClick('debugger')}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-normal transition-all text-left cursor-pointer ${
-              activeTab === 'debugger'
-                ? 'bg-[#0071e3] text-white font-medium shadow-md shadow-blue-500/20'
-                : 'text-[#d1d1d6] hover:bg-white/[0.06]'
-            }`}
-          >
-            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current opacity-90" strokeWidth="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-            <span>Depurador IA</span>
-          </button>
-
-          {/* 4. Swarm Multi-Agente */}
-          <button
-            onClick={() => handleTabClick('swarm')}
-            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] font-normal transition-all text-left cursor-pointer ${
-              activeTab === 'swarm'
-                ? 'bg-[#0071e3] text-white font-medium shadow-md shadow-blue-500/20'
-                : 'text-[#d1d1d6] hover:bg-white/[0.06]'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current opacity-90" strokeWidth="2">
-                <polygon points="12 2 2 7 12 12 22 7 12 2" />
-                <polyline points="2 17 12 22 22 17" />
-                <polyline points="2 12 12 17 22 12" />
-              </svg>
-              <span>Swarm Multi-Agente</span>
-            </div>
-            <span className="px-1.5 py-0.2 rounded-md bg-white/20 text-[10px] font-mono">{agentsCount}</span>
-          </button>
-
-          {/* 5. Visor de Código */}
-          <button
-            onClick={() => handleTabClick('code-viewer')}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-normal transition-all text-left cursor-pointer ${
-              activeTab === 'code-viewer'
-                ? 'bg-[#0071e3] text-white font-medium shadow-md shadow-blue-500/20'
-                : 'text-[#d1d1d6] hover:bg-white/[0.06]'
-            }`}
-          >
-            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current opacity-90" strokeWidth="2">
-              <polyline points="16 18 22 12 16 6" />
-              <polyline points="8 6 2 12 8 18" />
-            </svg>
-            <span>Visor de Codigo</span>
-          </button>
-
-          {/* 6. GitFlow & Graph Visual */}
-          <button
-            onClick={() => handleTabClick('git-manager')}
-            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] font-normal transition-all text-left cursor-pointer ${
-              activeTab === 'git-manager'
-                ? 'bg-[#0071e3] text-white font-medium shadow-md shadow-blue-500/20'
-                : 'text-[#d1d1d6] hover:bg-white/[0.06]'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current opacity-90" strokeWidth="2">
-                <circle cx="18" cy="18" r="3" />
-                <circle cx="6" cy="6" r="3" />
-                <path d="M13 6h3a2 2 0 0 1 2 2v7" />
-                <line x1="6" y1="9" x2="6" y2="21" />
-              </svg>
-              <span>GitFlow & Graph</span>
-            </div>
-            {gitModifiedCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-mono">
-                {gitModifiedCount}
-              </span>
-            )}
-          </button>
-
-          {/* 7. Scratchpad */}
-          <button
-            onClick={() => handleTabClick('scratchpad')}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-normal transition-all text-left cursor-pointer ${
-              activeTab === 'scratchpad'
-                ? 'bg-[#0071e3] text-white font-medium shadow-md shadow-blue-500/20'
-                : 'text-[#d1d1d6] hover:bg-white/[0.06]'
-            }`}
-          >
-            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current opacity-90" strokeWidth="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            <span>Scratchpad & Notas</span>
-          </button>
-
-          {/* 8. Contexto & .agents */}
-          <button
-            onClick={() => handleTabClick('agents-context')}
-            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] font-normal transition-all text-left cursor-pointer ${
-              activeTab === 'agents-context'
-                ? 'bg-[#0071e3] text-white font-medium shadow-md shadow-blue-500/20'
-                : 'text-[#d1d1d6] hover:bg-white/[0.06]'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current opacity-90" strokeWidth="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-              </svg>
-              <span>Contexto & .agents</span>
-            </div>
-            <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
-              {rulesCount} Reglas
-            </span>
-          </button>
-
-          {/* 9. Modelos & Cuotas */}
-          <button
-            onClick={() => handleTabClick('models')}
-            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] font-normal transition-all text-left cursor-pointer ${
-              activeTab === 'models'
-                ? 'bg-[#0071e3] text-white font-medium shadow-md shadow-blue-500/20'
-                : 'text-[#d1d1d6] hover:bg-white/[0.06]'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current opacity-90" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-              <span>Modelos & Cuotas</span>
-            </div>
-            <span className="font-mono text-[10px] font-bold text-lime-400">{geminiFiveHour}%</span>
-          </button>
-
-          {/* 10. Vinculación de APIs */}
-          <button
-            onClick={() => handleTabClick('linking')}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-normal transition-all text-left cursor-pointer ${
-              activeTab === 'linking'
-                ? 'bg-[#0071e3] text-white font-medium shadow-md shadow-blue-500/20'
-                : 'text-[#d1d1d6] hover:bg-white/[0.06]'
-            }`}
-          >
-            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current opacity-90" strokeWidth="2">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-            </svg>
-            <span>Vinculacion de APIs</span>
-          </button>
-        </div>
-
-        {/* Section: Sistema */}
-        <div className="space-y-1">
-          <div className="px-2.5 text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Sistema</div>
-
-          <button
-            onClick={() => handleTabClick('settings')}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-normal transition-all text-left cursor-pointer ${
-              activeTab === 'settings'
-                ? 'bg-[#0071e3] text-white font-medium shadow-md shadow-blue-500/20'
-                : 'text-[#d1d1d6] hover:bg-white/[0.06]'
-            }`}
-          >
-            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current opacity-90" strokeWidth="2">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-            <span>Ajustes del Notch</span>
-          </button>
+                {item.badge && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                      isSelected
+                        ? 'bg-white/20 text-white'
+                        : 'bg-white/[0.06] text-neutral-400'
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Bottom Sidebar Status */}
-      <div className="pt-3 border-t border-white/[0.08] text-[11px] text-neutral-400 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-[#30d158] animate-pulse" />
-          <span className="font-semibold text-neutral-300">Antigravity</span>
+      {/* Bottom Status Card */}
+      <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-neutral-400 font-medium">Google AI Pro</span>
+          <span className="text-emerald-400 font-bold font-mono">{geminiFiveHour}%</span>
         </div>
-        <span className="font-mono text-[10px] text-emerald-400">{credits} Cr</span>
+        <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400 transition-all duration-500"
+            style={{ width: `${geminiFiveHour}%` }}
+          />
+        </div>
+        <div className="text-[10.5px] text-neutral-500 flex items-center justify-between font-mono pt-0.5">
+          <span>{credits} créditos</span>
+          <span className="text-emerald-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Listo
+          </span>
+        </div>
       </div>
-    </div>
+    </nav>
   );
 };
