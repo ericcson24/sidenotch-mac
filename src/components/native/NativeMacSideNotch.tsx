@@ -146,26 +146,28 @@ export const NativeMacSideNotch: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handleQuotaUpdate = (data: Parameters<typeof updateTelemetry>[0]) => {
-      updateTelemetry(data);
-    };
-
-    if (window.electron?.onQuotaUpdate) {
-      window.electron.onQuotaUpdate(handleQuotaUpdate);
-    }
-
-    if (window.electron?.getRealQuotas) {
-      window.electron.getRealQuotas().then(quotas => {
-        if (quotas) updateTelemetry(quotas);
-      });
-    }
-
-    const interval = setInterval(() => {
-      if (window.electron?.getRealQuotas) {
-        window.electron.getRealQuotas().then(quotas => {
+    try {
+      const electron = (window as unknown as { require?: (mod: string) => { ipcRenderer: { on: (ch: string, cb: (e: unknown, data: any) => void) => void; invoke: (ch: string) => Promise<any>; removeAllListeners: (ch: string) => void } } }).require?.('electron');
+      if (electron?.ipcRenderer) {
+        electron.ipcRenderer.invoke('get-real-quotas').then(quotas => {
           if (quotas) updateTelemetry(quotas);
+        }).catch(() => {});
+
+        electron.ipcRenderer.on('quotas-updated', (_event, data) => {
+          if (data) updateTelemetry(data);
         });
       }
+    } catch {}
+
+    const interval = setInterval(() => {
+      try {
+        const electron = (window as unknown as { require?: (mod: string) => { ipcRenderer: { invoke: (ch: string) => Promise<any> } } }).require?.('electron');
+        if (electron?.ipcRenderer) {
+          electron.ipcRenderer.invoke('get-real-quotas').then(quotas => {
+            if (quotas) updateTelemetry(quotas);
+          }).catch(() => {});
+        }
+      } catch {}
     }, 15000);
 
     return () => clearInterval(interval);
@@ -188,13 +190,21 @@ export const NativeMacSideNotch: React.FC = () => {
       setIsExpanded(false);
       setQuickPrompt('');
       setQuickResponse('');
-    }, 450);
+    }, 400);
   };
 
   const handleOpenDashboard = () => {
     sounds.playHoverTick();
-    if (window.electron?.openDashboard) {
-      window.electron.openDashboard();
+    try {
+      const electron = (window as unknown as { require?: (mod: string) => { ipcRenderer: { send: (ch: string) => void; invoke: (ch: string) => Promise<any> } } }).require?.('electron');
+      if (electron?.ipcRenderer) {
+        electron.ipcRenderer.send('open-dashboard');
+        electron.ipcRenderer.send('open-settings');
+      } else {
+        window.location.hash = 'dashboard';
+      }
+    } catch {
+      window.location.hash = 'dashboard';
     }
   };
 
@@ -206,11 +216,14 @@ export const NativeMacSideNotch: React.FC = () => {
     sounds.playShutter();
 
     try {
-      if (window.electron?.sendPrompt) {
-        const response = await window.electron.sendPrompt(
-          `[Notch Direct Execution · ${activeModel.toUpperCase()}] ${quickPrompt.trim()}`,
-          activeModel === 'antigravity' ? 'gemini-3.7-pro' : activeModel === 'claude' ? 'claude-3.7-sonnet' : 'gpt-4o'
-        );
+      const electron = (window as unknown as { require?: (mod: string) => { ipcRenderer: { invoke: (ch: string, data: any) => Promise<any> } } }).require?.('electron');
+      if (electron?.ipcRenderer) {
+        const modelName = activeModel === 'antigravity' ? 'gemini-3.7-pro' : activeModel === 'claude' ? 'claude-3.7-sonnet' : 'gpt-4o';
+        const response = await electron.ipcRenderer.invoke('execute-single-agent', {
+          agent: { name: currentModelName, model: modelName, role: 'Asistente IA' },
+          prompt: quickPrompt.trim(),
+          workspace: ''
+        });
         setQuickResponse(response?.text || 'Tarea procesada correctamente.');
       } else {
         setQuickResponse('Instrucción enviada.');

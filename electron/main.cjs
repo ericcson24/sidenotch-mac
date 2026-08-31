@@ -45,7 +45,9 @@ function performNativeScreenCapture() {
 }
 
 function openSettingsWindow() {
-  if (settingsWindow) {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    if (settingsWindow.isMinimized()) settingsWindow.restore();
+    settingsWindow.show();
     settingsWindow.focus();
     return;
   }
@@ -80,12 +82,21 @@ function openSettingsWindow() {
 
   settingsWindow.once('ready-to-show', () => {
     settingsWindow.show();
+    settingsWindow.focus();
   });
 
   settingsWindow.on('closed', () => {
     settingsWindow = null;
   });
 }
+
+ipcMain.on('open-dashboard', () => {
+  openSettingsWindow();
+});
+ipcMain.handle('open-dashboard', () => {
+  openSettingsWindow();
+  return { success: true };
+});
 
 // IPC handlers for real AI Account Providers & Live Quotas
 ipcMain.handle('get-real-quotas', async () => {
