@@ -15,12 +15,12 @@ interface ConsoleTabProps {
   isSendingPrompt: boolean;
   promptInput: string;
   setPromptInput: (val: string) => void;
-  isComplexityDetected: boolean;
+  isComplexityDetected?: boolean;
   onSendPrompt: (e?: React.FormEvent, overrideText?: string) => void;
   onRunCommand?: (cmd: string) => void;
   onExportSession: () => void;
-  onOptimizePrompt: () => void;
-  onOpenMobileSimulator: () => void;
+  onOptimizePrompt?: () => void;
+  onOpenMobileSimulator?: () => void;
   promptQueueCount?: number;
 }
 
@@ -34,13 +34,19 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
   promptInput,
   setPromptInput,
   onSendPrompt,
+  onExportSession,
   promptQueueCount = 0,
 }) => {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const quickPrompts = [
     {
@@ -100,7 +106,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
           </div>
         </div>
 
-        {/* Clear & Queue Indicators */}
+        {/* Action Controls */}
         <div className="flex items-center gap-2">
           {promptQueueCount > 0 && (
             <span className="text-[11px] font-mono text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
@@ -109,15 +115,30 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
           )}
 
           {chatMessages.length > 0 && (
-            <button
-              onClick={() => {
-                setChatMessages([]);
-                sounds.playHoverTick();
-              }}
-              className="text-xs text-neutral-400 hover:text-rose-400 transition-colors cursor-pointer px-2 py-1"
-            >
-              Limpiar chat
-            </button>
+            <>
+              <button
+                onClick={onExportSession}
+                title="Exportar conversación a Markdown"
+                className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer px-2 py-1 flex items-center gap-1"
+              >
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <span>Exportar</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setChatMessages([]);
+                  sounds.playHoverTick();
+                }}
+                className="text-xs text-neutral-400 hover:text-rose-400 transition-colors cursor-pointer px-2 py-1"
+              >
+                Limpiar
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -179,7 +200,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
         {isSendingPrompt && (
           <div className="flex items-center gap-2 text-xs text-purple-300 italic px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20 w-fit">
             <div className="w-3 h-3 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" />
-            <span>Procesando instrucción...</span>
+            <span>Procesando instrucción con el equipo cooperativo...</span>
           </div>
         )}
         <div ref={chatEndRef} />
@@ -188,6 +209,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
       {/* Simplified Prompt Input */}
       <form onSubmit={onSendPrompt} className="p-3 border-t border-white/[0.06] bg-black/40 flex items-center gap-2">
         <input
+          ref={inputRef}
           type="text"
           value={promptInput}
           onChange={e => setPromptInput(e.target.value)}
