@@ -51,7 +51,7 @@ describe('ConsoleTab Agents & Chat Component', () => {
     );
 
     expect(screen.getByText('3 en espera')).toBeDefined();
-    expect(screen.getByText('👥 Equipo Cooperativo')).toBeDefined();
+    expect(screen.getByText('Equipo Cooperativo')).toBeDefined();
   });
 
   it('switches between cooperative swarm and single mode', () => {
@@ -80,7 +80,7 @@ describe('ConsoleTab Agents & Chat Component', () => {
       />
     );
 
-    const singleModeBtn = screen.getByText('⚡ Modo Rápido');
+    const singleModeBtn = screen.getByText('Modo Rápido');
     fireEvent.click(singleModeBtn);
     expect(setMode).toHaveBeenCalledWith('single');
   });

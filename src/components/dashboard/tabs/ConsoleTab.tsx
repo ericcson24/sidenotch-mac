@@ -52,19 +52,32 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
     {
       title: 'Crear o mejorar código',
       desc: 'Añadir componentes, lógica o páginas',
-      icon: '✨',
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-4 h-4 text-purple-400 fill-none stroke-current" strokeWidth="2">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      ),
       prompt: 'Analiza el proyecto y ayúdame a crear o mejorar la siguiente funcionalidad clave.',
     },
     {
       title: 'Explicar este proyecto',
       desc: 'Estructura y funcionamiento en lenguaje claro',
-      icon: '📖',
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-4 h-4 text-sky-400 fill-none stroke-current" strokeWidth="2">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+      ),
       prompt: 'Explícame en un lenguaje claro y sencillo qué hace este proyecto, qué archivos principales tiene y cómo funciona.',
     },
     {
       title: 'Buscar y arreglar errores',
       desc: 'Auditoría profunda de bugs y rendimiento',
-      icon: '🛡️',
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-4 h-4 text-emerald-400 fill-none stroke-current" strokeWidth="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      ),
       prompt: 'Revisa el código en busca de posibles errores, bugs o problemas de rendimiento y proponme los arreglos.',
     },
   ];
@@ -87,7 +100,13 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <span>👥 Equipo Cooperativo</span>
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              <span>Equipo Cooperativo</span>
             </button>
 
             <button
@@ -95,13 +114,16 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
                 setAgentDispatchMode('single');
                 sounds.playHoverTick();
               }}
-              className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                 agentDispatchMode === 'single'
                   ? 'bg-white/20 text-white font-semibold shadow-sm'
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <span>⚡ Modo Rápido</span>
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              <span>Modo Rápido</span>
             </button>
           </div>
         </div>
@@ -165,7 +187,9 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
                   className="p-3.5 rounded-xl bg-[#171822] hover:bg-[#1e202e] border border-white/[0.06] hover:border-sky-500/30 transition-all cursor-pointer flex items-center justify-between text-left group active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">{item.icon}</span>
+                    <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                      {item.icon}
+                    </div>
                     <div>
                       <div className="text-xs font-semibold text-white group-hover:text-sky-300 transition-colors">
                         {item.title}
@@ -173,7 +197,10 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
                       <div className="text-[11px] text-neutral-400">{item.desc}</div>
                     </div>
                   </div>
-                  <span className="text-neutral-500 text-xs group-hover:translate-x-1 transition-transform">→</span>
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 text-neutral-500 group-hover:text-white group-hover:translate-x-0.5 transition-all fill-none stroke-current" strokeWidth="2">
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" />
+                  </svg>
                 </div>
               ))}
             </div>

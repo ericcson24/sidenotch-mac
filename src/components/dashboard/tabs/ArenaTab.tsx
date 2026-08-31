@@ -110,7 +110,14 @@ export const ArenaTab: React.FC<ArenaTabProps> = ({
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8 rounded-2xl bg-[#13141c] border border-white/[0.06] space-y-2 shadow-xl">
-          <div className="text-2xl">🥊</div>
+          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-purple-400 mb-1">
+            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current" strokeWidth="2">
+              <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
+              <path d="M13 19l6-6" />
+              <path d="M16 16l4 4" />
+              <path d="M19 21l2-2" />
+            </svg>
+          </div>
           <div className="text-xs font-bold text-white">Sin resultados de batalla</div>
           <div className="text-xs text-neutral-400 max-w-sm">
             Escribe una instrucción arriba y pulsa "Lanzar Batalla 4x" para obtener respuestas reales de cada modelo.

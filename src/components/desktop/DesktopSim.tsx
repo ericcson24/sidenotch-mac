@@ -66,7 +66,7 @@ export const DesktopSim: React.FC = () => {
           <div className="flex-1 p-5 font-mono text-xs overflow-y-auto bg-slate-950/90 text-slate-200 leading-relaxed">
             {activeCodeTab === 'app' && (
               <div className="space-y-1">
-                <p className="text-slate-500">{'// ⚡ Antigravity Agentic Sidecar Engine — v1.4.0'}</p>
+                <p className="text-slate-500">{'// Antigravity Agentic Sidecar Engine — v1.4.0'}</p>
                 <p><span className="text-purple-400">import</span> {'{'} <span className="text-sky-300">LiquidGlassSidecar</span>, <span className="text-sky-300">QuotaMonitor</span> {'}'} <span className="text-purple-400">from</span> <span className="text-emerald-300">'@apple/liquid-glass'</span>;</p>
                 <p><span className="text-purple-400">import</span> {'{'} <span className="text-sky-300">SnipasteVisionAI</span> {'}'} <span className="text-purple-400">from</span> <span className="text-emerald-300">'@antigravity/vision-lens'</span>;</p>
                 <p>&nbsp;</p>
@@ -145,7 +145,7 @@ export const DesktopSim: React.FC = () => {
             </div>
 
             <h3 className="text-base font-extrabold text-white leading-snug mb-2">
-              Lleva tu cursor al borde derecho de la pantalla 👉
+              Lleva tu cursor al borde derecho de la pantalla
             </h3>
 
             <p className="text-xs text-slate-300 leading-relaxed mb-4">

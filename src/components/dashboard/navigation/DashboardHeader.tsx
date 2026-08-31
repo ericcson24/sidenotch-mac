@@ -33,7 +33,9 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           title="Cambiar carpeta de trabajo"
           className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs text-neutral-200 transition-all cursor-pointer group"
         >
-          <span className="text-sky-400">📁</span>
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-sky-400 fill-none stroke-current" strokeWidth="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
           <span className="font-semibold text-white max-w-[200px] truncate">{folderName}</span>
           <span className="text-[10px] text-sky-400 font-medium group-hover:underline">Cambiar</span>
         </button>
@@ -50,7 +52,10 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               : 'bg-white/[0.04] hover:bg-white/[0.08] text-neutral-300 border border-white/10'
           }`}
         >
-          <span>📱</span>
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+            <line x1="12" y1="18" x2="12.01" y2="18" />
+          </svg>
           <span>Móvil</span>
           {isMetroRunning && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
         </button>

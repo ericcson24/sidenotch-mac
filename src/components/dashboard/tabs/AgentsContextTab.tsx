@@ -101,7 +101,12 @@ export const AgentsContextTab: React.FC<AgentsContextTabProps> = ({
               )}
               className="p-3 rounded-xl bg-black/40 hover:bg-black/60 border border-white/[0.06] hover:border-sky-500/30 transition-all cursor-pointer space-y-1 group"
             >
-              <div className="text-xs font-bold text-white group-hover:text-sky-300 transition-colors">✨ Estilo TypeScript & React</div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-sky-300 transition-colors">
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+                <span>Estilo TypeScript & React</span>
+              </div>
               <div className="text-[11px] text-neutral-400 leading-snug">Tipado estricto, interfaces limpias y componentes funcionales.</div>
             </div>
 
@@ -112,7 +117,12 @@ export const AgentsContextTab: React.FC<AgentsContextTabProps> = ({
               )}
               className="p-3 rounded-xl bg-black/40 hover:bg-black/60 border border-white/[0.06] hover:border-emerald-500/30 transition-all cursor-pointer space-y-1 group"
             >
-              <div className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">🛡️ Seguridad & Rendimiento</div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <span>Seguridad & Rendimiento</span>
+              </div>
               <div className="text-[11px] text-neutral-400 leading-snug">Sanitización de entradas, control de excepciones y optimización de memoria.</div>
             </div>
           </div>
@@ -140,8 +150,16 @@ export const AgentsContextTab: React.FC<AgentsContextTabProps> = ({
             </div>
           ))
         ) : (
-          <div className="p-8 rounded-2xl bg-[#13141c] border border-white/[0.08] text-center space-y-2 shadow-xl">
-            <div className="text-2xl">📋</div>
+          <div className="p-8 rounded-2xl bg-[#13141c] border border-white/[0.08] text-center space-y-2 shadow-xl flex flex-col items-center">
+            <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-neutral-400 mb-1">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+            </div>
             <div className="text-xs font-bold text-white">Sin reglas personalizadas</div>
             <div className="text-xs text-neutral-400 max-w-sm mx-auto">
               Crea tu primera regla o selecciona una plantilla para definir directivas que respetarán todos los modelos.
