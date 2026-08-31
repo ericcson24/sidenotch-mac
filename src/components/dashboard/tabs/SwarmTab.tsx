@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Agent, WorkspaceContextData } from '../../../types/dashboard';
+import { sounds } from '../../../utils/soundEffects';
 
 interface SwarmTabProps {
   agents: Agent[];
@@ -28,10 +29,17 @@ export const SwarmTab: React.FC<SwarmTabProps> = ({
     setSelectedSwarmAgentIds(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
+    sounds.playHoverTick();
   };
 
+  const sampleSwarmTasks = [
+    'Diseñar e implementar autenticación con validación de tipos y pruebas',
+    'Auditar accesibilidad, performance y seguridad de la aplicación',
+    'Refactorizar la estructura de componentes para mejorar modularidad',
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-5">
       <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight">Equipo Multi-Agente (Swarm Pipeline)</h2>
@@ -87,10 +95,26 @@ export const SwarmTab: React.FC<SwarmTabProps> = ({
           rows={3}
           value={swarmPrompt}
           onChange={e => setSwarmPrompt(e.target.value)}
-          placeholder="Ejemplo: Diseñar la arquitectura del sistema de pagos, implementar los componentes y verificar que no haya fallos..."
-          className="w-full bg-black/50 border border-white/10 rounded-xl p-3.5 font-mono text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500"
+          placeholder="Ejemplo: Diseñar la arquitectura, implementar componentes y verificar que no haya errores..."
+          className="w-full bg-black/50 border border-white/10 rounded-xl p-3.5 font-mono text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 leading-relaxed"
         />
-        <div className="flex justify-end">
+
+        {/* Quick Sample Prompts */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-[10.5px] text-neutral-400 font-medium shrink-0">Sugerencias:</span>
+          {sampleSwarmTasks.map((t, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => { setSwarmPrompt(t); sounds.playHoverTick(); }}
+              className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[10.5px] text-neutral-300 border border-white/10 shrink-0 transition-colors cursor-pointer"
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex justify-end pt-1">
           <button
             type="submit"
             disabled={isExecutingSwarm || !swarmPrompt.trim() || selectedSwarmAgentIds.length === 0}
@@ -103,7 +127,7 @@ export const SwarmTab: React.FC<SwarmTabProps> = ({
 
       {/* Live Logs */}
       {swarmProgressLogs.length > 0 && (
-        <div className="p-4 rounded-2xl bg-[#13141c] border border-purple-500/25 space-y-2 shadow-xl">
+        <div className="p-4 rounded-2xl bg-[#13141c] border border-purple-500/25 space-y-2 shadow-xl animate-in fade-in">
           <div className="text-xs font-bold text-purple-300 uppercase tracking-wider">Progreso en Vivo del Swarm</div>
           <div className="p-3 rounded-xl bg-black/40 font-mono text-xs text-neutral-300 space-y-1 max-h-48 overflow-y-auto border border-white/[0.06]">
             {swarmProgressLogs.map((log, idx) => (
