@@ -40,7 +40,7 @@ interface AntigravityData {
 }
 
 export const NativeMacSideNotch: React.FC = () => {
-  const [isHovered, setIsHovered] = useState<boolean>(true);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
   const [activeModel, setActiveModel] = useState<'claude' | 'openai' | 'antigravity'>('claude');
   const [quickPrompt, setQuickPrompt] = useState<string>('');
   const [quickResponse, setQuickResponse] = useState<string>('');
@@ -165,9 +165,10 @@ export const NativeMacSideNotch: React.FC = () => {
 
   const handleMouseLeave = () => {
     collapseTimerRef.current = setTimeout(() => {
-      // Keep visible if needed or auto collapse after delay
-      // setIsHovered(false);
-    }, 600);
+      setIsHovered(false);
+      setQuickPrompt('');
+      setQuickResponse('');
+    }, 300);
   };
 
   const handleOpenDashboard = () => {
