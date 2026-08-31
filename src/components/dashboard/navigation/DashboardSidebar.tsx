@@ -24,7 +24,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     {
       id: 'console' as DashboardTab,
       label: 'Asistente IA',
-      description: 'Chat y generación de código',
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -32,23 +31,19 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       ),
     },
     {
-      id: 'models' as DashboardTab,
-      label: 'Cuotas y Modelos',
-      description: 'Gemini, Claude y GPT',
-      badge: `${geminiFiveHour}%`,
-      badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+      id: 'tools' as DashboardTab,
+      label: 'Herramientas',
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
         </svg>
       ),
     },
     {
       id: 'git-manager' as DashboardTab,
-      label: 'Proyecto & Git',
-      description: 'Archivos y control de cambios',
+      label: 'Archivos & Git',
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
           <circle cx="18" cy="18" r="3" />
@@ -59,23 +54,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       ),
     },
     {
-      id: 'tools' as DashboardTab,
-      label: 'Herramientas Pro',
-      description: 'Arena 4x, Swarm, Depurador',
-      badge: '6',
-      badgeColor: 'text-purple-300 bg-purple-500/15 border-purple-500/25',
-      icon: (
-        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
-          <polygon points="12 2 2 7 12 12 22 7 12 2" />
-          <polyline points="2 17 12 22 22 17" />
-          <polyline points="2 12 12 17 22 12" />
-        </svg>
-      ),
-    },
-    {
       id: 'settings' as DashboardTab,
-      label: 'Ajustes',
-      description: 'Preferencias y arranque',
+      label: 'Ajustes & Cuotas',
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
           <circle cx="12" cy="12" r="3" />
@@ -86,82 +66,69 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   ];
 
   const isToolsActive = ['arena', 'swarm', 'debugger', 'code-viewer', 'scratchpad', 'agents-context'].includes(activeTab) || activeTab === 'tools';
+  const isSettingsActive = activeTab === 'settings' || activeTab === 'models' || activeTab === 'linking';
 
   return (
-    <nav className="w-64 bg-[#111218] border-r border-white/[0.08] flex flex-col justify-between shrink-0 p-3 pt-12 select-none">
+    <nav className="w-56 bg-[#101116] border-r border-white/[0.06] flex flex-col justify-between shrink-0 p-3 pt-12 select-none">
       <div className="space-y-4">
         {/* App Title Header */}
         <div className="px-3 pb-3 border-b border-white/[0.06] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-blue-500/30">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-blue-500/20">
               S
             </div>
-            <span className="text-xs font-bold text-white tracking-wide">SideNotch AI</span>
+            <span className="text-xs font-bold text-white tracking-tight">SideNotch</span>
           </div>
-          <span className="text-[10px] font-mono text-neutral-400 bg-white/[0.04] px-2 py-0.5 rounded-full border border-white/[0.06]">v1.0</span>
+          <span className="text-[10px] font-mono text-neutral-400 bg-white/[0.04] px-2 py-0.5 rounded-full border border-white/[0.06]">
+            IA Mac
+          </span>
         </div>
 
-        {/* Primary Clean Navigation List */}
-        <div className="space-y-1.5">
+        {/* Simplified Navigation List */}
+        <div className="space-y-1">
           {navItems.map(item => {
-            const isSelected = item.id === 'tools' ? isToolsActive : activeTab === item.id;
+            const isSelected = item.id === 'tools'
+              ? isToolsActive
+              : item.id === 'settings'
+              ? isSettingsActive
+              : activeTab === item.id;
+
             return (
               <button
                 key={item.id}
                 onClick={() => handleTabClick(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all cursor-pointer text-left ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all cursor-pointer text-left text-xs font-medium ${
                   isSelected
-                    ? 'bg-[#0071e3] text-white font-semibold shadow-lg shadow-blue-500/25'
-                    : 'text-neutral-300 hover:bg-white/[0.05] hover:text-white'
+                    ? 'bg-[#0071e3] text-white font-semibold shadow-md shadow-blue-500/25'
+                    : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`p-1 rounded-lg ${isSelected ? 'text-white' : 'text-neutral-400'}`}>
-                    {item.icon}
-                  </div>
-                  <div>
-                    <div className="text-[13px] leading-tight font-medium">{item.label}</div>
-                    <div className={`text-[10.5px] leading-tight mt-0.5 ${isSelected ? 'text-blue-100/90' : 'text-neutral-400'}`}>
-                      {item.description}
-                    </div>
-                  </div>
-                </div>
-
-                {item.badge && (
-                  <span
-                    className={`px-2 py-0.5 rounded-md text-[10.5px] font-mono font-bold border ${
-                      isSelected
-                        ? 'bg-white/20 text-white border-transparent'
-                        : item.badgeColor
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
+                <span className={isSelected ? 'text-white' : 'text-neutral-400'}>{item.icon}</span>
+                <span>{item.label}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Bottom Status Card */}
-      <div className="p-3.5 rounded-2xl bg-[#161822] border border-white/[0.06] space-y-2.5 shadow-sm">
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-neutral-200 font-semibold">Google AI Pro</span>
-          </div>
+      {/* Bottom Subtle Status */}
+      <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="text-neutral-400 font-medium">Google AI Pro</span>
           <span className="text-emerald-400 font-bold font-mono">{geminiFiveHour}%</span>
         </div>
-        <div className="w-full h-1.5 rounded-full bg-black/40 overflow-hidden">
+        <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400 transition-all duration-500"
+            className="h-full rounded-full bg-emerald-400"
             style={{ width: `${geminiFiveHour}%` }}
           />
         </div>
-        <div className="text-[11px] text-neutral-400 flex items-center justify-between font-mono pt-0.5">
-          <span>{credits.toLocaleString()} créditos</span>
-          <span className="text-neutral-300">5 horas</span>
+        <div className="text-[10.5px] text-neutral-400 flex items-center justify-between font-mono">
+          <span>{credits.toLocaleString()} cr</span>
+          <span className="text-emerald-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            Listo
+          </span>
         </div>
       </div>
     </nav>

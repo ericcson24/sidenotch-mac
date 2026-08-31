@@ -928,11 +928,13 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
             />
           )}
 
-          {/* TAB 5: AJUSTES */}
+          {/* TAB 4: AJUSTES & CUOTAS */}
           {activeTab === 'settings' && (
             <SettingsTab
               config={config}
               isSaved={isSaved}
+              realQuotas={realQuotas}
+              onRefreshQuotas={fetchLiveTelemetry}
               onUpdateConfig={newConfig => {
                 setConfig(newConfig);
                 autoSaveToDisk(newConfig, agents, tasks);
