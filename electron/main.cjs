@@ -872,8 +872,8 @@ function createWindow() {
     mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     mainWindow.setAlwaysOnTop(true, 'floating', 1);
 
-    // Initial forward mode: passes through clicks on transparent background
-    mainWindow.setIgnoreMouseEvents(true, { forward: true });
+    // Enable full clickability on the notch overlay
+    mainWindow.setIgnoreMouseEvents(false);
 
     const dockMenu = Menu.buildFromTemplate([
       {

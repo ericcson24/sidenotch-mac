@@ -5,13 +5,13 @@ import { sounds } from '../../utils/soundEffects';
 // Subcomponents
 import { NotchFillets } from './notch/NotchFillets';
 import { NotchBubbles } from './notch/NotchBubbles';
-import { MiniCLIInput } from './notch/MiniCLIInput';
 
 interface ClaudeData {
   isLinked: boolean;
   percent: number;
   maxBadge: string;
   fiveHourPercent: number;
+  fiveHourResetText: string;
   weeklyPercent: number;
   weeklyResetText: string;
   weeklyFablePercent: number;
@@ -22,7 +22,10 @@ interface OpenAIData {
   isLinked: boolean;
   percent: number;
   maxBadge: string;
-  tiers: { label: string; percent: number; resetText?: string }[];
+  fiveHourPercent: number;
+  fiveHourResetText: string;
+  weeklyPercent: number;
+  weeklyResetText: string;
 }
 
 interface AntigravityData {
@@ -34,65 +37,47 @@ interface AntigravityData {
   geminiFiveHourText: string;
   geminiWeekly: number;
   geminiWeeklyText: string;
-  claudeGptFiveHour: number;
-  claudeGptWeekly: number;
 }
 
-// Master Apple Fluid Spring Constants (SwiftUI .spring(response: 0.42, dampingFraction: 0.74))
-const liquidSpring = {
-  type: 'spring' as const,
-  stiffness: 380,
-  damping: 26,
-  mass: 0.6,
-};
-
-const microSpring = {
-  type: 'spring' as const,
-  stiffness: 500,
-  damping: 24,
-  mass: 0.4,
-};
-
 export const NativeMacSideNotch: React.FC = () => {
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [isHovered, setIsHovered] = useState<boolean>(true);
   const [activeModel, setActiveModel] = useState<'claude' | 'openai' | 'antigravity'>('claude');
   const [quickPrompt, setQuickPrompt] = useState<string>('');
   const [quickResponse, setQuickResponse] = useState<string>('');
-  const [isProcessingQuickPrompt, setIsProcessingQuickPrompt] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [claudeData, setClaudeData] = useState<ClaudeData>({
-    isLinked: false,
-    percent: 100,
-    maxBadge: '5h',
-    fiveHourPercent: 100,
-    weeklyPercent: 100,
-    weeklyResetText: 'En 5 días',
-    weeklyFablePercent: 100,
-    weeklyFableResetText: 'En 5 días',
+    isLinked: true,
+    percent: 15,
+    maxBadge: 'Max 20x',
+    fiveHourPercent: 7,
+    fiveHourResetText: 'Resets in 3h 1m',
+    weeklyPercent: 15,
+    weeklyResetText: 'Resets in 5d 22h',
+    weeklyFablePercent: 13,
+    weeklyFableResetText: 'Resets in 5d 22h',
   });
 
   const [openAIData, setOpenAIData] = useState<OpenAIData>({
-    isLinked: false,
-    percent: 100,
+    isLinked: true,
+    percent: 0,
     maxBadge: 'Tier 1',
-    tiers: [
-      { label: 'GPT-4o', percent: 100, resetText: '5h restantes' },
-      { label: 'o3-mini', percent: 100, resetText: '5h restantes' },
-    ],
+    fiveHourPercent: 0,
+    fiveHourResetText: 'Resets in 5h 0m',
+    weeklyPercent: 0,
+    weeklyResetText: 'Resets in 7d 0h',
   });
 
   const [antigravityData, setAntigravityData] = useState<AntigravityData>({
     isLinked: true,
-    plan: 'Google AI Studio',
+    plan: 'Pro Plan',
     availableCredits: 2016,
     enableOverages: true,
-    geminiFiveHour: 99,
-    geminiFiveHourText: 'Recarga en 4 horas, 59 minutos.',
-    geminiWeekly: 17,
-    geminiWeeklyText: 'Recarga en 3 días, 12 horas.',
-    claudeGptFiveHour: 100,
-    claudeGptWeekly: 100,
+    geminiFiveHour: 100,
+    geminiFiveHourText: 'Resets in 4h 59m',
+    geminiWeekly: 42,
+    geminiWeeklyText: 'Resets in 3d 12h',
   });
 
   const updateTelemetry = useCallback((data: {
@@ -136,11 +121,8 @@ export const NativeMacSideNotch: React.FC = () => {
       setOpenAIData(prev => ({
         ...prev,
         percent: data.gptFiveHour ?? prev.percent,
+        fiveHourPercent: data.gptFiveHour ?? prev.fiveHourPercent,
         isLinked: data.openaiLinked ?? prev.isLinked,
-        tiers: [
-          { label: 'GPT-4o', percent: data.gptFiveHour ?? 100, resetText: '5h restantes' },
-          { label: 'o3-mini', percent: data.gptFiveHour ?? 100, resetText: '5h restantes' },
-        ],
       }));
     }
   }, []);
@@ -178,19 +160,14 @@ export const NativeMacSideNotch: React.FC = () => {
       clearTimeout(collapseTimerRef.current);
       collapseTimerRef.current = null;
     }
-    if (!isExpanded) {
-      sounds.playIslandExpand();
-      setIsExpanded(true);
-    }
+    setIsHovered(true);
   };
 
   const handleMouseLeave = () => {
     collapseTimerRef.current = setTimeout(() => {
-      sounds.playIslandCollapse();
-      setIsExpanded(false);
-      setQuickPrompt('');
-      setQuickResponse('');
-    }, 400);
+      // Keep visible if needed or auto collapse after delay
+      // setIsHovered(false);
+    }, 600);
   };
 
   const handleOpenDashboard = () => {
@@ -210,9 +187,9 @@ export const NativeMacSideNotch: React.FC = () => {
 
   const handleQuickExecute = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quickPrompt.trim() || isProcessingQuickPrompt) return;
+    if (!quickPrompt.trim() || isProcessing) return;
 
-    setIsProcessingQuickPrompt(true);
+    setIsProcessing(true);
     sounds.playShutter();
 
     try {
@@ -220,232 +197,229 @@ export const NativeMacSideNotch: React.FC = () => {
       if (electron?.ipcRenderer) {
         const modelName = activeModel === 'antigravity' ? 'gemini-3.7-pro' : activeModel === 'claude' ? 'claude-3.7-sonnet' : 'gpt-4o';
         const response = await electron.ipcRenderer.invoke('execute-single-agent', {
-          agent: { name: currentModelName, model: modelName, role: 'Asistente IA' },
+          agent: { name: activeModel, model: modelName, role: 'Asistente IA' },
           prompt: quickPrompt.trim(),
           workspace: ''
         });
-        setQuickResponse(response?.text || 'Tarea procesada correctamente.');
+        setQuickResponse(response?.text || 'Completado con éxito.');
       } else {
-        setQuickResponse('Instrucción enviada.');
+        setQuickResponse('Enviado.');
       }
     } catch {
-      setQuickResponse('Error al procesar.');
+      setQuickResponse('Error al ejecutar.');
     } finally {
-      setIsProcessingQuickPrompt(false);
+      setIsProcessing(false);
     }
   };
-
-  const currentColor = activeModel === 'claude'
-    ? '#FF6B4A'
-    : activeModel === 'openai'
-      ? '#10A37F'
-      : '#D4FF00';
-
-  const currentPercent = activeModel === 'claude'
-    ? claudeData.percent
-    : activeModel === 'openai'
-      ? openAIData.percent
-      : antigravityData.geminiFiveHour;
-
-  const currentModelName = activeModel === 'claude'
-    ? 'Claude 3.7 Sonnet'
-    : activeModel === 'openai'
-      ? 'OpenAI GPT-4o'
-      : 'Gemini 3.7 Pro';
-
-  const currentPlan = activeModel === 'claude'
-    ? (claudeData.isLinked ? 'Anthropic Pro' : 'Sin conectar')
-    : activeModel === 'openai'
-      ? (openAIData.isLinked ? 'OpenAI Tier 1' : 'Sin conectar')
-      : antigravityData.plan;
 
   const bubbleModels = [
     {
       id: 'claude' as const,
-      name: 'Claude 3.7 Sonnet (Anthropic)',
+      name: 'Claude 3.7 Sonnet',
       shortName: 'CLD',
       percent: claudeData.percent,
-      color: '#FF6B4A',
-      glowColor: 'rgba(255, 107, 74, 0.4)',
+      color: '#30d158',
+      glowColor: 'rgba(48, 209, 88, 0.4)',
       isLinked: claudeData.isLinked,
-      badgeText: claudeData.isLinked ? `5h: ${claudeData.percent}%` : 'Conectar API',
+      badgeText: '5h: 7% · W: 15%',
     },
     {
       id: 'openai' as const,
       name: 'OpenAI GPT-4o',
       shortName: 'GPT',
       percent: openAIData.percent,
-      color: '#10A37F',
+      color: '#10a37f',
       glowColor: 'rgba(16, 163, 127, 0.4)',
       isLinked: openAIData.isLinked,
-      badgeText: openAIData.isLinked ? `Cuota: ${openAIData.percent}%` : 'Conectar API',
+      badgeText: '0% usado',
     },
     {
       id: 'antigravity' as const,
-      name: 'Gemini 3.7 Pro (Google AI)',
+      name: 'Kiro / Gemini Pro',
       shortName: 'GEM',
       percent: antigravityData.geminiFiveHour,
-      color: '#D4FF00',
-      glowColor: 'rgba(212, 255, 0, 0.4)',
+      color: '#ff453a',
+      glowColor: 'rgba(255, 69, 58, 0.4)',
       isLinked: true,
-      badgeText: `${antigravityData.availableCredits} Cr · 5h: ${antigravityData.geminiFiveHour}%`,
+      badgeText: `${antigravityData.availableCredits} cr · 100%`,
     },
   ];
 
   return (
     <div
-      className="fixed top-0 right-0 h-screen flex items-center justify-end pointer-events-none select-none z-50 overflow-visible font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Helvetica_Neue',sans-serif]"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="fixed top-6 right-0 flex items-center justify-end pointer-events-auto select-none z-50 font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Helvetica_Neue',sans-serif]"
     >
-      <motion.div
-        layout
-        initial={{ width: 56, height: 260 }}
-        animate={{
-          width: isExpanded ? 360 : 56,
-          height: isExpanded ? 440 : 260,
-        }}
-        transition={liquidSpring}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={`pointer-events-auto relative flex flex-col justify-between overflow-hidden bg-[#050508] border-l border-t border-b border-white/[0.12] shadow-2xl backdrop-blur-3xl transition-colors duration-300 ${
-          isExpanded ? 'rounded-l-[30px] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.88)]' : 'rounded-l-[26px] py-3.5 px-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.75)] cursor-pointer'
-        }`}
-      >
-        {/* Concave Bezier Anchors to Screen Border */}
-        <NotchFillets />
-
-        {/* 
-          1. COMPACT LIQUID BUBBLES STATE (CodeBurn CapacityDock Rail)
-        */}
-        {!isExpanded && (
-          <AnimatePresence>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={microSpring}
-              className="h-full flex flex-col items-center justify-between"
-            >
-              <NotchBubbles
-                models={bubbleModels}
-                activeModel={activeModel}
-                onSelectModel={setActiveModel}
-                onExpandNotch={handleMouseEnter}
-                onOpenSettings={handleOpenDashboard}
-              />
-            </motion.div>
-          </AnimatePresence>
-        )}
-
-        {/* 
-          2. EXPANDED CAPACITY DOCK DETAIL STATE (CodeBurn CapacityDockDetailView)
-        */}
-        {isExpanded && (
+      {/* 
+        1. THE FLOATING POPUP FLYOUT CARD (CODEBURN CapacityDockDetailView)
+      */}
+      <AnimatePresence>
+        {isHovered && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={microSpring}
-            className="h-full flex flex-col justify-between space-y-3"
+            initial={{ opacity: 0, x: 20, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 10, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 450, damping: 28 }}
+            className="mr-3 relative w-[310px] rounded-2xl bg-[#0e0f14] border border-white/10 p-5 shadow-[0_20px_50px_rgba(0,0,0,0.85)] flex flex-col space-y-4 backdrop-blur-3xl"
           >
-            {/* Header: Provider Title, Plan Badge & Settings Button */}
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: currentColor }} />
-                <span className="text-sm font-semibold text-[#FAF5E6] tracking-tight">{currentModelName} Usage</span>
-              </div>
+            {/* Triangular Tail Arrow pointing to the Right Rail */}
+            <div
+              className="absolute -right-2 top-10 w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[8px] border-l-[#0e0f14]"
+              style={{
+                top: activeModel === 'claude' ? '28px' : activeModel === 'openai' ? '88px' : '148px',
+              }}
+            />
 
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-medium text-neutral-400 bg-white/[0.06] px-2 py-0.5 rounded-md border border-white/10">
-                  {currentPlan}
-                </span>
-                <button
-                  onClick={handleOpenDashboard}
-                  title="Abrir Dashboard Completo"
-                  className="p-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-neutral-300 hover:text-white transition-colors cursor-pointer"
-                >
-                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
-                    <polyline points="15 3 21 3 21 9" />
-                    <polyline points="9 21 3 21 3 15" />
-                    <line x1="21" y1="3" x2="14" y2="10" />
-                    <line x1="3" y1="21" x2="10" y2="14" />
+            {/* Header: Model Title + Plan Badge */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                {activeModel === 'claude' && (
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white text-white">
+                    <path d="M12 2a1 1 0 0 1 1 1v6.586l4.657-4.657a1 1 0 1 1 1.414 1.414L14.414 11H21a1 1 0 1 1 0 2h-6.586l4.657 4.657a1 1 0 0 1-1.414 1.414L13 14.414V21a1 1 0 1 1-2 0v-6.586l-4.657 4.657a1 1 0 0 1-1.414-1.414L9.586 13H3a1 1 0 1 1 0-2h6.586L4.929 6.343a1 1 0 0 1 1.414-1.414L11 9.586V3a1 1 0 0 1 1-1z" />
                   </svg>
-                </button>
+                )}
+                {activeModel === 'openai' && (
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white text-white">
+                    <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073z" />
+                  </svg>
+                )}
+                {activeModel === 'antigravity' && (
+                  <span className="font-bold font-sans text-sm tracking-tighter text-white">
+                    K<span className="text-[10px] align-super">˙</span>
+                  </span>
+                )}
+                <h3 className="text-base font-bold text-white tracking-tight">
+                  {activeModel === 'claude' ? 'Claude Usage' : activeModel === 'openai' ? 'OpenAI Usage' : 'Kiro / Gemini Usage'}
+                </h3>
               </div>
+
+              <span className="text-xs font-mono text-neutral-400">
+                {activeModel === 'claude' ? claudeData.maxBadge : activeModel === 'openai' ? openAIData.maxBadge : antigravityData.plan}
+              </span>
             </div>
 
-            {/* Model Selector Segmented Tabs */}
-            <div className="p-1 rounded-xl bg-black/50 border border-white/[0.06] flex items-center gap-1">
-              {[
-                { id: 'claude' as const, label: 'Claude', color: '#FF6B4A' },
-                { id: 'openai' as const, label: 'OpenAI', color: '#10A37F' },
-                { id: 'antigravity' as const, label: 'Gemini', color: '#D4FF00' },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => { setActiveModel(tab.id); sounds.playHoverTick(); }}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    activeModel === tab.id
-                      ? 'bg-white/10 text-white shadow-sm border border-white/10'
-                      : 'text-neutral-400 hover:text-neutral-200'
-                  }`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tab.color }} />
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Capacity Breakdown Rows (CodeBurn Style) */}
-            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/[0.06] space-y-2.5">
-              {/* Row 1: 5-Hour Limit */}
+            {/* Capacity Breakdown Rows (Exact CodeBurn layout) */}
+            <div className="space-y-3.5">
+              {/* Row 1: 5-hour */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-neutral-300">5-hour limit</span>
-                  <span className="font-mono font-bold text-[#FAF5E6]">{currentPercent}%</span>
+                  <span className="font-medium text-neutral-200">5-hour</span>
+                  <span className="font-mono font-bold text-white">
+                    {activeModel === 'claude' ? `${claudeData.fiveHourPercent}%` : activeModel === 'openai' ? `${openAIData.fiveHourPercent}%` : `${antigravityData.geminiFiveHour}%`}
+                  </span>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all duration-700 ease-out"
-                    style={{ width: `${currentPercent}%`, backgroundColor: currentColor }}
+                    className="h-full rounded-full bg-[#30d158] transition-all duration-500"
+                    style={{
+                      width: activeModel === 'claude' ? `${claudeData.fiveHourPercent}%` : activeModel === 'openai' ? `${openAIData.fiveHourPercent}%` : `${antigravityData.geminiFiveHour}%`,
+                      backgroundColor: activeModel === 'antigravity' ? '#ff453a' : '#30d158',
+                    }}
                   />
                 </div>
-                <div className="text-[10px] text-neutral-400 font-mono">
-                  {activeModel === 'antigravity' ? antigravityData.geminiFiveHourText : 'Recarga automática calculada'}
+                <div className="text-[10px] font-mono text-neutral-500 text-right">
+                  {activeModel === 'claude' ? claudeData.fiveHourResetText : activeModel === 'openai' ? openAIData.fiveHourResetText : antigravityData.geminiFiveHourText}
                 </div>
               </div>
 
-              {/* Row 2: Weekly Limit (if Gemini) or Credits */}
-              {activeModel === 'antigravity' && (
-                <div className="space-y-1 pt-1.5 border-t border-white/[0.06]">
+              {/* Row 2: Weekly */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-neutral-200">Weekly</span>
+                  <span className="font-mono font-bold text-white">
+                    {activeModel === 'claude' ? `${claudeData.weeklyPercent}%` : activeModel === 'openai' ? `${openAIData.weeklyPercent}%` : `${antigravityData.geminiWeekly}%`}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-[#30d158] transition-all duration-500"
+                    style={{
+                      width: activeModel === 'claude' ? `${claudeData.weeklyPercent}%` : activeModel === 'openai' ? `${openAIData.weeklyPercent}%` : `${antigravityData.geminiWeekly}%`,
+                    }}
+                  />
+                </div>
+                <div className="text-[10px] font-mono text-neutral-500 text-right">
+                  {activeModel === 'claude' ? claudeData.weeklyResetText : activeModel === 'openai' ? openAIData.weeklyResetText : antigravityData.geminiWeeklyText}
+                </div>
+              </div>
+
+              {/* Row 3: Weekly · Fable or Credits */}
+              {activeModel === 'claude' && (
+                <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-neutral-300">Weekly limit</span>
-                    <span className="font-mono font-bold text-[#FAF5E6]">{antigravityData.geminiWeekly}%</span>
+                    <span className="font-medium text-neutral-200">Weekly · Fable</span>
+                    <span className="font-mono font-bold text-white">{claudeData.weeklyFablePercent}%</span>
                   </div>
-                  <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden">
                     <div
-                      className="h-full rounded-full transition-all duration-700 ease-out bg-[#D4FF00]"
-                      style={{ width: `${antigravityData.geminiWeekly}%` }}
+                      className="h-full rounded-full bg-[#30d158] transition-all duration-500"
+                      style={{ width: `${claudeData.weeklyFablePercent}%` }}
                     />
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-neutral-400 font-mono">
-                    <span>{antigravityData.geminiWeeklyText}</span>
-                    <span className="text-white font-semibold">{antigravityData.availableCredits} cr</span>
+                  <div className="text-[10px] font-mono text-neutral-500 text-right">
+                    {claudeData.weeklyFableResetText}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Mini-CLI Direct Prompt Input */}
-            <MiniCLIInput
-              activeModelName={currentModelName}
-              quickPrompt={quickPrompt}
-              setQuickPrompt={setQuickPrompt}
-              quickResponse={quickResponse}
-              isProcessing={isProcessingQuickPrompt}
-              onSubmit={handleQuickExecute}
-            />
+            {/* Direct Prompt & Dashboard Launch Button */}
+            <div className="pt-2 border-t border-white/[0.08] space-y-2">
+              <form onSubmit={handleQuickExecute} className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={quickPrompt}
+                  onChange={e => setQuickPrompt(e.target.value)}
+                  placeholder={`Preguntar a ${activeModel}...`}
+                  className="flex-1 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#0071e3]"
+                />
+                <button
+                  type="submit"
+                  disabled={isProcessing || !quickPrompt.trim()}
+                  className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer disabled:opacity-40 transition-colors"
+                >
+                  {isProcessing ? '...' : '↵'}
+                </button>
+              </form>
+
+              {quickResponse && (
+                <div className="p-2 rounded-lg bg-black/40 border border-white/5 text-[11px] font-mono text-neutral-300 max-h-20 overflow-y-auto leading-relaxed">
+                  {quickResponse}
+                </div>
+              )}
+
+              <button
+                onClick={handleOpenDashboard}
+                className="w-full py-2 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Abrir Dashboard Completo</span>
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2.5">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </button>
+            </div>
           </motion.div>
         )}
-      </motion.div>
+      </AnimatePresence>
+
+      {/* 
+        2. THE SOLID RIGHT RAIL (CapacityDock Rail with Concave Fillets)
+      */}
+      <div className="relative w-14 py-4 rounded-l-[22px] bg-[#090a0f] border-l border-t border-b border-white/[0.12] shadow-2xl flex flex-col items-center justify-center">
+        {/* Concave Fillets curving into screen border */}
+        <NotchFillets />
+
+        {/* 3 Model Squircles */}
+        <NotchBubbles
+          models={bubbleModels}
+          activeModel={activeModel}
+          onSelectModel={setActiveModel}
+          onOpenDashboard={handleOpenDashboard}
+        />
+      </div>
     </div>
   );
 };
