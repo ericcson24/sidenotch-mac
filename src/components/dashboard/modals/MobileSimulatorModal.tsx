@@ -46,31 +46,31 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-xl animate-in fade-in duration-200"
+      className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div
-        className="bg-[#15151b] border border-white/20 rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] max-w-4xl w-full p-5 space-y-4"
+        className="bg-[#13141c] border border-white/[0.12] rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] max-w-4xl w-full p-5 space-y-4"
         onClick={e => e.stopPropagation()}
       >
         {/* Header Controls */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-300">
               <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
                 <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
                 <line x1="12" y1="18" x2="12.01" y2="18" />
               </svg>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Simulador Móvil & Inspector Expo</h3>
-              <p className="text-[11px] text-neutral-400">Previsualiza y permite que los agentes de IA auditen tu UI móvil en vivo.</p>
+              <h3 className="text-sm font-bold text-white">Simulador Móvil iPhone</h3>
+              <p className="text-[11px] text-neutral-400">Previsualiza y audita tu interfaz en pantalla pequeña y áreas seguras.</p>
             </div>
           </div>
 
           {/* Device Selector & Rotation */}
           <div className="flex items-center gap-2">
-            <div className="flex bg-black/50 p-0.5 rounded-xl border border-white/10 text-xs font-mono">
+            <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 text-xs font-mono">
               <button
                 onClick={() => handleDeviceChange('iphone-16')}
                 className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${device === 'iphone-16' ? 'bg-[#0071e3] text-white font-bold' : 'text-neutral-400 hover:text-white'}`}
@@ -93,8 +93,8 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({
 
             <button
               onClick={handleOrientationToggle}
-              title="Rotar Orientación"
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 transition-colors cursor-pointer"
+              title="Rotar orientación"
+              className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-neutral-300 transition-colors cursor-pointer"
             >
               <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
                 <polyline points="23 4 23 10 17 10" />
@@ -105,7 +105,7 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/20 hover:text-rose-300 border border-white/10 text-neutral-400 transition-colors cursor-pointer"
+              className="p-2 rounded-xl bg-white/[0.06] hover:bg-rose-500/20 hover:text-rose-300 border border-white/10 text-neutral-400 transition-colors cursor-pointer"
             >
               <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -117,78 +117,64 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({
 
         {/* URL Input Bar & Action Triggers */}
         <div className="flex items-center gap-2">
-          <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/60 border border-white/10 font-mono text-xs text-white">
+          <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/50 border border-white/10 font-mono text-xs text-white">
             <span className="text-neutral-500 font-bold">URL:</span>
             <input
               type="text"
               value={simulatorUrl}
               onChange={e => setSimulatorUrl(e.target.value)}
-              placeholder="http://localhost:8081 o http://localhost:5173"
+              placeholder="http://localhost:5173 o http://localhost:8081"
               className="flex-1 bg-transparent focus:outline-none text-neutral-200"
             />
             <button
               onClick={handleReloadFrame}
               title="Recargar frame"
-              className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] text-neutral-300 transition-colors cursor-pointer"
+              className="px-2.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10.5px] text-neutral-300 transition-colors cursor-pointer"
             >
               Recargar
             </button>
           </div>
 
-          {/* Iniciar Expo / Metro */}
           <button
-            onClick={() => onRunCommand('npx expo start --web || npm run dev')}
-            className="px-3 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-xs font-semibold border border-purple-500/30 transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0"
+            onClick={() => onRunCommand('npm run dev || npx expo start --web')}
+            className="px-3.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-xs font-semibold text-neutral-200 border border-white/10 transition-all cursor-pointer whitespace-nowrap active:scale-95"
           >
-            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
-            <span>Iniciar Expo/Metro</span>
+            Iniciar Servidor Local
           </button>
 
-          {/* Botón Auditar con IA */}
           <button
             onClick={handleAudit}
-            className="px-4 py-2 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0"
+            className="px-4 py-1.5 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-xs font-bold text-white shadow-md shadow-blue-500/20 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
           >
-            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 16v-4M12 8h.01" />
-            </svg>
-            <span>Auditar UI con IA</span>
+            Auditar UI con IA
           </button>
         </div>
 
-        {/* Mobile Frame Container */}
-        <div className="flex-1 flex items-center justify-center p-4 bg-black/40 rounded-2xl border border-white/5 overflow-hidden">
+        {/* Viewport Frame with Realistic Bezels */}
+        <div className="flex-1 flex items-center justify-center p-4 bg-black/40 rounded-2xl border border-white/[0.06] overflow-auto">
           <div
-            className={`relative bg-black rounded-[48px] border-[10px] border-[#2c2c34] shadow-2xl overflow-hidden transition-all duration-300 flex flex-col items-center justify-between ${
-              orientation === 'portrait'
-                ? device === 'iphone-16' ? 'w-[375px] h-[640px]' : device === 'pixel-8' ? 'w-[390px] h-[640px]' : 'w-[520px] h-[640px]'
-                : 'w-[640px] h-[375px]'
+            className={`transition-all duration-300 bg-black border-[5px] border-[#222430] rounded-[36px] overflow-hidden shadow-2xl relative flex flex-col ${
+              device === 'iphone-16'
+                ? orientation === 'portrait' ? 'w-[320px] h-[520px]' : 'w-[520px] h-[320px]'
+                : device === 'pixel-8'
+                ? orientation === 'portrait' ? 'w-[330px] h-[530px]' : 'w-[530px] h-[330px]'
+                : orientation === 'portrait' ? 'w-[440px] h-[560px]' : 'w-[560px] h-[440px]'
             }`}
           >
-            {/* iPhone Dynamic Island Notch */}
-            {device === 'iphone-16' && orientation === 'portrait' && (
-              <div className="absolute top-2.5 z-30 w-24 h-6 rounded-full bg-black flex items-center justify-between px-2 shadow-md">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#111] border border-white/10" />
-                <span className="w-2 h-2 rounded-full bg-[#0a192f] border border-blue-500/30" />
+            {/* Dynamic Island on Phone */}
+            {orientation === 'portrait' && device === 'iphone-16' && (
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-4 bg-black rounded-full z-20 flex items-center justify-end px-1.5 border border-white/10">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500/60" />
               </div>
             )}
 
-            {/* Live Web / Metro Iframe */}
+            {/* Embedded Web View */}
             <iframe
               key={iframeKey}
               src={simulatorUrl}
-              title="Mobile App Viewport"
+              title="Mobile Simulator Viewport"
               className="w-full h-full border-0 bg-white"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
             />
-
-            {/* iOS Home Indicator Bar */}
-            {orientation === 'portrait' && (
-              <div className="absolute bottom-1.5 w-32 h-1 rounded-full bg-white/40 z-30 pointer-events-none" />
-            )}
           </div>
         </div>
       </div>
