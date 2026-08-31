@@ -280,16 +280,6 @@ export const NativeMacSideNotch: React.FC = () => {
 
   const bubbleModels = [
     {
-      id: 'antigravity' as const,
-      name: 'Gemini 3.7 Pro (Google AI)',
-      shortName: 'GEM',
-      percent: antigravityData.geminiFiveHour,
-      color: '#D4FF00',
-      glowColor: 'rgba(212, 255, 0, 0.4)',
-      isLinked: true,
-      badgeText: `${antigravityData.availableCredits} Cr · 5h: ${antigravityData.geminiFiveHour}%`,
-    },
-    {
       id: 'claude' as const,
       name: 'Claude 3.7 Sonnet (Anthropic)',
       shortName: 'CLD',
@@ -309,6 +299,16 @@ export const NativeMacSideNotch: React.FC = () => {
       isLinked: openAIData.isLinked,
       badgeText: openAIData.isLinked ? `Cuota: ${openAIData.percent}%` : 'Conectar API',
     },
+    {
+      id: 'antigravity' as const,
+      name: 'Gemini 3.7 Pro (Google AI)',
+      shortName: 'GEM',
+      percent: antigravityData.geminiFiveHour,
+      color: '#D4FF00',
+      glowColor: 'rgba(212, 255, 0, 0.4)',
+      isLinked: true,
+      badgeText: `${antigravityData.availableCredits} Cr · 5h: ${antigravityData.geminiFiveHour}%`,
+    },
   ];
 
   return (
@@ -317,23 +317,23 @@ export const NativeMacSideNotch: React.FC = () => {
     >
       <motion.div
         layout
-        initial={{ width: 62, height: 210 }}
+        initial={{ width: 56, height: 260 }}
         animate={{
-          width: isExpanded ? 370 : 62,
-          height: isExpanded ? 460 : 210,
+          width: isExpanded ? 370 : 56,
+          height: isExpanded ? 460 : 260,
         }}
         transition={liquidSpring}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`pointer-events-auto relative flex flex-col justify-between overflow-hidden bg-[#070709] border-l border-t border-b border-white/[0.12] shadow-2xl backdrop-blur-3xl transition-colors duration-300 ${
-          isExpanded ? 'rounded-l-[32px] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.85)]' : 'rounded-l-[28px] py-3.5 px-2 shadow-[0_10px_35px_rgba(0,0,0,0.65)] cursor-pointer'
+        className={`pointer-events-auto relative flex flex-col justify-between overflow-hidden bg-[#050508] border-l border-t border-b border-white/[0.12] shadow-2xl backdrop-blur-3xl transition-colors duration-300 ${
+          isExpanded ? 'rounded-l-[32px] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.85)]' : 'rounded-l-[26px] py-3.5 px-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.75)] cursor-pointer'
         }`}
       >
         {/* Concave Bezier Anchors to Screen Border */}
         <NotchFillets />
 
         {/* 
-          1. COMPACT LIQUID BUBBLES STATE (Interactive AI Bubble Orbs)
+          1. COMPACT LIQUID BUBBLES STATE (Interactive AI Badges like Reference Design)
         */}
         {!isExpanded && (
           <AnimatePresence>
@@ -342,21 +342,16 @@ export const NativeMacSideNotch: React.FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={microSpring}
-              className="h-full flex flex-col items-center justify-between py-1"
+              className="h-full flex flex-col items-center justify-between"
             >
-              {/* Stack of Floating AI Bubble Orbs */}
+              {/* Stack of Floating AI Badges + Settings Button */}
               <NotchBubbles
                 models={bubbleModels}
                 activeModel={activeModel}
                 onSelectModel={setActiveModel}
                 onExpandNotch={handleMouseEnter}
+                onOpenSettings={handleOpenDashboard}
               />
-
-              {/* Bottom Pulse Dot & Wave indicator */}
-              <div className="flex items-center gap-1 mt-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[8px] font-mono text-neutral-400 font-bold">120Hz</span>
-              </div>
             </motion.div>
           </AnimatePresence>
         )}
