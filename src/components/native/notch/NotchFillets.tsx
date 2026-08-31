@@ -5,7 +5,7 @@ export const NotchFillets: React.FC = () => {
     <>
       {/* Top Concave Bézier Fillet Anchor (CodeBurn Style) */}
       <svg
-        className="absolute -top-5 right-0 w-5 h-5 pointer-events-none text-[#050508]"
+        className="absolute -top-5 right-0 w-5 h-5 pointer-events-none text-[#090a0f]"
         viewBox="0 0 20 20"
         fill="currentColor"
       >
@@ -14,7 +14,7 @@ export const NotchFillets: React.FC = () => {
 
       {/* Bottom Concave Bézier Fillet Anchor (CodeBurn Style) */}
       <svg
-        className="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none text-[#050508]"
+        className="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none text-[#090a0f]"
         viewBox="0 0 20 20"
         fill="currentColor"
       >

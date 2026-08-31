@@ -409,11 +409,11 @@ export const NativeMacSideNotch: React.FC = () => {
       {/* 
         2. THE SOLID RIGHT RAIL (CapacityDock Rail with Concave Fillets)
       */}
-      <div className="relative w-14 py-4 rounded-l-[22px] bg-[#090a0f] border-l border-t border-b border-white/[0.12] shadow-2xl flex flex-col items-center justify-center">
+      <div className="relative w-[68px] py-4 rounded-l-[26px] bg-[#090a0f] border-l border-t border-b border-white/[0.12] shadow-2xl flex flex-col items-center justify-center">
         {/* Concave Fillets curving into screen border */}
         <NotchFillets />
 
-        {/* 3 Model Squircles */}
+        {/* 3 Model Squircles + Bottom Dashboard Button */}
         <NotchBubbles
           models={bubbleModels}
           activeModel={activeModel}

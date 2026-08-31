@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { sounds } from '../../../utils/soundEffects';
 
 interface BubbleModelData {
@@ -23,6 +24,7 @@ export const NotchBubbles: React.FC<NotchBubblesProps> = ({
   models,
   activeModel,
   onSelectModel,
+  onOpenDashboard,
 }) => {
   // Render provider SVG icons (exact CodeBurn style)
   const renderModelIcon = (id: 'claude' | 'openai' | 'antigravity') => {
@@ -51,7 +53,8 @@ export const NotchBubbles: React.FC<NotchBubblesProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center gap-3 py-1 select-none pointer-events-auto">
+    <div className="w-full flex flex-col items-center gap-3 py-1 select-none pointer-events-auto">
+      {/* 3 AI Model Squircles */}
       {models.map((model) => {
         const isActive = activeModel === model.id;
         const isRedAccent = model.id === 'antigravity' || model.percent >= 90;
@@ -113,6 +116,24 @@ export const NotchBubbles: React.FC<NotchBubblesProps> = ({
           </div>
         );
       })}
+
+      {/* 4. Bottom Protruding Dashboard / Settings Button (Directly below 3rd model) */}
+      <motion.button
+        whileHover={{ scale: 1.12, rotate: 25 }}
+        whileTap={{ scale: 0.92 }}
+        onClick={e => {
+          e.stopPropagation();
+          sounds.playHoverTick();
+          if (onOpenDashboard) onOpenDashboard();
+        }}
+        title="Abrir Dashboard de Control & Ajustes"
+        className="w-9 h-9 rounded-full bg-[#12131a] border border-white/15 hover:border-white/30 text-neutral-300 hover:text-white flex items-center justify-center shadow-lg transition-all cursor-pointer mt-1 active:scale-95"
+      >
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      </motion.button>
     </div>
   );
 };
