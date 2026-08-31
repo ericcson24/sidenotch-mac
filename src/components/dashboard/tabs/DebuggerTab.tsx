@@ -23,13 +23,15 @@ export const DebuggerTab: React.FC<DebuggerTabProps> = ({
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-white tracking-tight">Depurador IA de Errores & Stack Traces</h2>
-        <p className="text-xs text-neutral-400">Pega cualquier error de compilación o ejecución para que el agente localice el archivo causante y sugiera el arreglo exacto.</p>
+        <h2 className="text-xl font-bold text-white tracking-tight">Depurador IA de Errores</h2>
+        <p className="text-xs text-neutral-400 mt-0.5">
+          Pega cualquier error de compilación o terminal para que el agente localice el archivo causante y proponga el arreglo exacto.
+        </p>
       </div>
 
       {/* Trace Input */}
-      <form onSubmit={onDiagnoseError} className="p-5 rounded-2xl bg-[#17171c]/90 border border-white/[0.08] space-y-3 backdrop-blur-md shadow-xl">
-        <div className="text-xs font-bold text-white uppercase tracking-wider">Pega el Error o Stack Trace de la Terminal</div>
+      <form onSubmit={onDiagnoseError} className="p-5 rounded-2xl bg-[#13141c] border border-white/[0.08] space-y-3 shadow-xl">
+        <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Error o Stack Trace de Terminal</div>
         <textarea
           rows={4}
           value={errorInput}
@@ -41,7 +43,7 @@ export const DebuggerTab: React.FC<DebuggerTabProps> = ({
           <button
             type="submit"
             disabled={!errorInput.trim()}
-            className="px-5 py-2 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+            className="px-5 py-2 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-40"
           >
             Diagnosticar Error
           </button>
@@ -50,36 +52,36 @@ export const DebuggerTab: React.FC<DebuggerTabProps> = ({
 
       {/* Diagnosis Output Card */}
       {errorDiagnosis && (
-        <div className="p-5 rounded-2xl bg-[#17171c]/90 border border-emerald-500/40 space-y-4 backdrop-blur-md shadow-xl animate-in fade-in">
+        <div className="p-5 rounded-2xl bg-[#13141c] border border-emerald-500/30 space-y-4 shadow-xl animate-in fade-in">
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Diagnóstico de Causa Raíz</div>
-            <span className="px-2 py-0.5 rounded bg-white/10 text-xs font-mono text-neutral-300">{errorDiagnosis.affectedFile}</span>
+            <span className="px-2.5 py-0.5 rounded-md bg-white/10 text-xs font-mono text-neutral-200">{errorDiagnosis.affectedFile}</span>
           </div>
 
-          <div className="p-3 rounded-xl bg-black/40 font-mono text-xs text-neutral-200 space-y-1">
+          <div className="p-3.5 rounded-xl bg-black/40 font-mono text-xs text-neutral-200 space-y-1.5 border border-white/[0.06]">
             <div className="font-bold text-white">{errorDiagnosis.summary}</div>
-            <div className="text-neutral-400">{errorDiagnosis.explanation}</div>
+            <div className="text-[11px] text-neutral-400">Línea estimada: {errorDiagnosis.lineNumber}</div>
           </div>
 
-          <div className="space-y-1.5">
-            <div className="text-xs font-bold text-neutral-300">Solución Recomendada:</div>
-            <div className="p-3 rounded-xl bg-black/40 font-mono text-xs text-sky-300 whitespace-pre-wrap">
+          <div className="space-y-1">
+            <div className="text-xs font-semibold text-neutral-300">Solución recomendada por la IA:</div>
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-200 text-xs leading-relaxed">
               {errorDiagnosis.recommendedFix}
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex items-center gap-2 pt-1">
             <button
               onClick={() => onOpenFileInViewer(`${currentWorkspace}/${errorDiagnosis.affectedFile}`)}
-              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-xs font-semibold text-white border border-white/10 transition-all cursor-pointer"
             >
-              Abrir Archivo en Visor
+              Abrir archivo en el Visor
             </button>
             <button
-              onClick={() => onSendPrompt(undefined, `Arregla este error en ${errorDiagnosis.affectedFile}:\n\n${errorInput}`)}
-              className="px-4 py-1.5 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-xs font-bold text-white transition-colors cursor-pointer"
+              onClick={() => onSendPrompt(undefined, `Aplica automáticamente la solución al error en ${errorDiagnosis.affectedFile}:\n${errorDiagnosis.recommendedFix}`)}
+              className="px-4 py-2 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-xs font-bold text-white shadow-md shadow-blue-500/20 active:scale-95 transition-all cursor-pointer"
             >
-              Aplicar Arreglo con Agente
+              Aplicar solución con el Asistente
             </button>
           </div>
         </div>

@@ -23,72 +23,84 @@ export const CodeViewerTab: React.FC<CodeViewerTabProps> = ({
   onOpenFileInViewer,
   onSendPrompt,
 }) => {
+  const handleCopy = () => {
+    if (!fileContent) return;
+    navigator.clipboard.writeText(fileContent);
+    setCopySuccess(true);
+    sounds.playHoverTick();
+    setTimeout(() => setCopySuccess(false), 2000);
+  };
+
   return (
-    <div className="h-full flex rounded-2xl bg-[#17171c]/90 border border-white/[0.08] overflow-hidden shadow-xl backdrop-blur-md">
-      {/* Left File Tree */}
-      <div className="w-64 border-r border-white/10 bg-black/30 p-3 overflow-y-auto space-y-1">
-        <div className="text-xs font-bold text-neutral-400 uppercase px-2 py-1 tracking-wider">Archivos del Proyecto</div>
-        {workspaceContext?.filesList?.map((f, fIdx) => (
-          <button
-            key={fIdx}
-            onClick={() => onOpenFileInViewer(f.path)}
-            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-mono text-left transition-colors cursor-pointer ${
-              selectedFileForViewer === f.path ? 'bg-[#0071e3] text-white' : 'text-neutral-300 hover:bg-white/5'
-            }`}
-          >
-            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current shrink-0" strokeWidth="2">
-              {f.isDirectory ? (
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-              ) : (
-                <>
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </>
-              )}
-            </svg>
-            <span className="truncate">{f.name}</span>
-          </button>
-        ))}
+    <div className="h-full flex flex-col space-y-4">
+      <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+        <div>
+          <h2 className="text-xl font-bold text-white tracking-tight">Visor & Explorador de Archivos</h2>
+          <p className="text-xs text-neutral-400 mt-0.5">Explora cualquier archivo de tu proyecto y pide a la IA que lo refactorice o explique.</p>
+        </div>
       </div>
 
-      {/* Right Code Content Preview */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-black/50">
-        <div className="p-3 border-b border-white/10 flex items-center justify-between bg-black/40">
-          <div className="text-xs font-mono text-neutral-300 truncate">
-            {selectedFileForViewer || 'Selecciona un archivo para inspeccionar'}
+      <div className="flex-1 flex gap-4 overflow-hidden">
+        {/* File Tree List */}
+        <div className="w-64 rounded-2xl bg-[#13141c] border border-white/[0.08] p-3 flex flex-col space-y-2 shadow-xl shrink-0">
+          <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider px-1">
+            Archivos ({workspaceContext?.filesList?.length || 0})
           </div>
-          {selectedFileForViewer && (
-            <div className="flex items-center gap-2">
+          <div className="flex-1 overflow-y-auto space-y-1 pr-1 font-mono text-xs">
+            {workspaceContext?.filesList?.map((file, idx) => (
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(fileContent);
-                  setCopySuccess(true);
-                  sounds.playIslandExpand();
-                  setTimeout(() => setCopySuccess(false), 2000);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-mono text-neutral-200 transition-colors cursor-pointer"
+                key={idx}
+                onClick={() => onOpenFileInViewer(`${workspaceContext.path}/${file.name}`)}
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg truncate transition-all cursor-pointer flex items-center gap-2 ${
+                  selectedFileForViewer?.endsWith(file.name)
+                    ? 'bg-[#0071e3] text-white font-bold'
+                    : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white'
+                }`}
               >
-                {copySuccess ? '✓ Copiado' : 'Copiar'}
+                <span>{file.isDirectory ? '📁' : '📄'}</span>
+                <span className="truncate">{file.name}</span>
               </button>
-              <button
-                onClick={() => onSendPrompt(undefined, `Refactoriza y analiza el archivo ${selectedFileForViewer.split('/').pop()}:\n\n${fileContent.slice(0, 800)}`)}
-                className="px-3 py-1 rounded-lg bg-[#0071e3] hover:bg-[#0077ed] text-white text-[11px] font-bold transition-all cursor-pointer active:scale-95"
-              >
-                Analizar con Agente
-              </button>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
 
-        <div className="flex-1 p-4 overflow-y-auto font-mono text-xs text-neutral-200 whitespace-pre leading-relaxed">
-          {isLoadingFile ? (
-            <div className="flex items-center gap-2 text-neutral-400">
-              <div className="w-3 h-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-              <span>Cargando archivo...</span>
-            </div>
-          ) : (
-            fileContent || '// Selecciona cualquier archivo en la columna izquierda para leer su contenido.'
-          )}
+        {/* Code Content Canvas */}
+        <div className="flex-1 rounded-2xl bg-[#13141c] border border-white/[0.08] flex flex-col overflow-hidden shadow-xl">
+          <div className="p-3 border-b border-white/[0.08] bg-black/30 flex items-center justify-between">
+            <span className="text-xs font-mono text-neutral-200 truncate">
+              {selectedFileForViewer || 'Selecciona un archivo del listado'}
+            </span>
+
+            {selectedFileForViewer && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCopy}
+                  className="px-3 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-xs font-medium text-neutral-300 border border-white/10 transition-colors cursor-pointer"
+                >
+                  {copySuccess ? '✓ Copiado' : 'Copiar'}
+                </button>
+                <button
+                  onClick={() => onSendPrompt(undefined, `Refactoriza y optimiza el siguiente código del archivo ${selectedFileForViewer}:\n\`\`\`\n${fileContent.slice(0, 3000)}\n\`\`\``)}
+                  className="px-3 py-1 rounded-lg bg-[#0071e3] hover:bg-[#0077ed] text-xs font-bold text-white shadow-md shadow-blue-500/20 active:scale-95 transition-all cursor-pointer"
+                >
+                  Refactorizar con IA
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 p-4 overflow-y-auto font-mono text-xs bg-black/40 text-neutral-200 leading-relaxed whitespace-pre-wrap">
+            {isLoadingFile ? (
+              <div className="flex items-center gap-2 text-neutral-400">
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-sky-400 border-t-transparent animate-spin" />
+                <span>Cargando archivo...</span>
+              </div>
+            ) : fileContent ? (
+              fileContent
+            ) : (
+              <span className="text-neutral-500">Haz clic en cualquier archivo para inspeccionarlo aquí.</span>
+            )}
+          </div>
         </div>
       </div>
     </div>

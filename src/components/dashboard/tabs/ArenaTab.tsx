@@ -1,6 +1,5 @@
 import React from 'react';
 import type { ArenaResult } from '../../../types/dashboard';
-import { sounds } from '../../../utils/soundEffects';
 
 interface ArenaTabProps {
   arenaPrompt: string;
@@ -27,68 +26,61 @@ export const ArenaTab: React.FC<ArenaTabProps> = ({
   ];
 
   return (
-    <div className="h-full flex flex-col space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="h-full flex flex-col space-y-5">
+      <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
         <div>
-          <h2 className="text-lg font-bold text-white tracking-tight">Arena de Modelos de IA en Paralelo</h2>
-          <p className="text-xs text-neutral-400">Compara las respuestas, velocidad (ms) y calidad de código entre Gemini, Claude, GPT y DeepSeek simultáneamente.</p>
+          <h2 className="text-xl font-bold text-white tracking-tight">Arena de Modelos en Paralelo (4x)</h2>
+          <p className="text-xs text-neutral-400 mt-0.5">
+            Compara las respuestas, velocidad y enfoque de código entre Gemini, Claude, GPT y DeepSeek simultáneamente.
+          </p>
         </div>
         {arenaExecutionTime > 0 && (
-          <span className="text-xs font-mono text-emerald-400">
+          <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
             Tiempo total: {arenaExecutionTime}ms
           </span>
         )}
       </div>
 
       {/* Arena Prompt Bar */}
-      <form onSubmit={onRunArena} className="p-3 rounded-2xl bg-[#17171c]/90 border border-white/[0.08] flex items-center gap-2 shadow-lg backdrop-blur-md">
+      <form onSubmit={onRunArena} className="p-3.5 rounded-2xl bg-[#13141c] border border-white/[0.08] flex items-center gap-2 shadow-xl">
         <input
           type="text"
           value={arenaPrompt}
           onChange={e => setArenaPrompt(e.target.value)}
-          placeholder="Escribe la tarea o problema para que los 4 modelos compitan en directo..."
+          placeholder="Escribe una tarea o reto para que los 4 modelos compitan en directo..."
           className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#0071e3]"
         />
         <button
           type="submit"
           disabled={isExecutingArena || !arenaPrompt.trim()}
-          className="px-5 py-2.5 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-bold active:scale-95 cursor-pointer transition-all disabled:opacity-50 flex items-center gap-1.5"
+          className="px-5 py-2.5 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-bold active:scale-95 cursor-pointer transition-all disabled:opacity-40 flex items-center gap-1.5 shadow-md shadow-blue-500/20"
         >
-          {isExecutingArena ? 'Ejecutando Arena...' : 'Lanzar Batalla'}
+          {isExecutingArena ? 'Ejecutando Arena...' : 'Lanzar Batalla 4x'}
         </button>
       </form>
 
-      {/* Split Cards Grid */}
-      <div className="flex-1 grid grid-cols-2 gap-4 overflow-y-auto">
-        {displayResults.map((res, i) => (
-          <div key={i} className="p-4 rounded-2xl bg-[#17171c]/90 border border-white/[0.08] flex flex-col justify-between space-y-3 shadow-xl backdrop-blur-md">
-            <div>
-              <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: res.color }} />
-                  <span className="text-xs font-bold text-white">{res.modelName}</span>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] font-mono text-neutral-400">
-                  {res.latencyMs > 0 && <span className="text-emerald-400">{res.latencyMs}ms</span>}
-                  <span>{res.provider}</span>
-                </div>
+      {/* 4 Models Grid */}
+      <div className="grid grid-cols-2 gap-4 flex-1 overflow-y-auto">
+        {displayResults.map(r => (
+          <div
+            key={r.modelId}
+            className="p-4 rounded-2xl bg-[#13141c] border border-white/[0.08] flex flex-col justify-between space-y-3 shadow-xl"
+          >
+            <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color }} />
+                <span className="text-xs font-bold text-white">{r.modelName}</span>
               </div>
-              <div className="mt-3 font-mono text-xs text-neutral-200 whitespace-pre-wrap leading-relaxed max-h-[220px] overflow-y-auto">
-                {res.text}
-              </div>
+              <span className="text-[10px] font-mono text-neutral-400">{r.provider}</span>
             </div>
 
-            <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between">
-              <span className="text-[10px] font-mono text-neutral-500">~{res.tokenEstimate} tokens</span>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(res.text);
-                  sounds.playIslandExpand();
-                }}
-                className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-mono text-neutral-300 transition-colors cursor-pointer"
-              >
-                Copiar Solucion
-              </button>
+            <div className="p-3 rounded-xl bg-black/40 border border-white/[0.06] text-xs font-mono text-neutral-200 flex-1 overflow-y-auto max-h-48 leading-relaxed whitespace-pre-wrap">
+              {r.text}
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400 pt-1">
+              <span>Latencia: <strong className="text-white">{r.latencyMs}ms</strong></span>
+              <span className="text-emerald-400">Listo</span>
             </div>
           </div>
         ))}
