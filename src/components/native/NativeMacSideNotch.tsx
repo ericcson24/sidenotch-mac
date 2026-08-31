@@ -80,49 +80,59 @@ export const NativeMacSideNotch: React.FC = () => {
     geminiWeeklyText: 'Resets in 3d 12h',
   });
 
-  const updateTelemetry = useCallback((data: {
-    geminiFiveHour?: number;
-    geminiFiveHourText?: string;
-    geminiWeekly?: number;
-    geminiWeeklyText?: string;
-    credits?: number;
-    plan?: string;
-    enableOverages?: boolean;
-    claudeFiveHour?: number;
-    claudeWeekly?: number;
-    gptFiveHour?: number;
-    claudeLinked?: boolean;
-    openaiLinked?: boolean;
-  }) => {
-    if (data.geminiFiveHour !== undefined) {
+  const updateTelemetry = useCallback((data: any) => {
+    if (!data) return;
+
+    // Handle Antigravity / Gemini live telemetry
+    const ag = data.antigravity || data;
+    const gemini5h = ag.geminiFiveHour ?? ag.geminiModels?.fiveHourRemaining;
+    const gemini5hText = ag.geminiFiveHourText || ag.geminiModels?.fiveHourRefreshText;
+    const geminiWeekly = ag.geminiWeekly ?? ag.geminiModels?.weeklyRemaining;
+    const geminiWeeklyText = ag.geminiWeeklyText || ag.geminiModels?.weeklyRefreshText;
+    const credits = ag.credits ?? ag.availableCredits;
+    const plan = ag.plan;
+    const enableOverages = ag.enableOverages;
+
+    if (gemini5h !== undefined || credits !== undefined || plan !== undefined) {
       setAntigravityData(prev => ({
         ...prev,
-        geminiFiveHour: data.geminiFiveHour ?? prev.geminiFiveHour,
-        geminiFiveHourText: data.geminiFiveHourText || prev.geminiFiveHourText,
-        geminiWeekly: data.geminiWeekly ?? prev.geminiWeekly,
-        geminiWeeklyText: data.geminiWeeklyText || prev.geminiWeeklyText,
-        availableCredits: data.credits ?? prev.availableCredits,
-        plan: data.plan || prev.plan,
-        enableOverages: data.enableOverages ?? prev.enableOverages,
+        geminiFiveHour: gemini5h ?? prev.geminiFiveHour,
+        geminiFiveHourText: gemini5hText || prev.geminiFiveHourText,
+        geminiWeekly: geminiWeekly ?? prev.geminiWeekly,
+        geminiWeeklyText: geminiWeeklyText || prev.geminiWeeklyText,
+        availableCredits: credits ?? prev.availableCredits,
+        plan: plan || prev.plan,
+        enableOverages: enableOverages ?? prev.enableOverages,
       }));
     }
 
-    if (data.claudeFiveHour !== undefined || data.claudeLinked !== undefined) {
+    // Handle Claude
+    const cld = data.claude || data;
+    const cld5h = cld.claudeFiveHour ?? cld.fiveHourPercent ?? cld.percent;
+    const cldWeekly = cld.claudeWeekly ?? cld.weeklyPercent;
+    const cldLinked = cld.claudeLinked ?? cld.isLinked;
+
+    if (cld5h !== undefined || cldLinked !== undefined) {
       setClaudeData(prev => ({
         ...prev,
-        percent: data.claudeFiveHour ?? prev.percent,
-        fiveHourPercent: data.claudeFiveHour ?? prev.fiveHourPercent,
-        weeklyPercent: data.claudeWeekly ?? prev.weeklyPercent,
-        isLinked: data.claudeLinked ?? prev.isLinked,
+        percent: cld5h ?? prev.percent,
+        fiveHourPercent: cld5h ?? prev.fiveHourPercent,
+        weeklyPercent: cldWeekly ?? prev.weeklyPercent,
+        isLinked: cldLinked ?? prev.isLinked,
       }));
     }
 
-    if (data.gptFiveHour !== undefined || data.openaiLinked !== undefined) {
+    // Handle OpenAI
+    const gpt = data.openai || data;
+    const gpt5h = gpt.gptFiveHour ?? gpt.fiveHourPercent ?? gpt.percent;
+    const gptLinked = gpt.openaiLinked ?? gpt.isLinked;
+
+    if (gpt5h !== undefined || gptLinked !== undefined) {
       setOpenAIData(prev => ({
         ...prev,
-        percent: data.gptFiveHour ?? prev.percent,
-        fiveHourPercent: data.gptFiveHour ?? prev.fiveHourPercent,
-        isLinked: data.openaiLinked ?? prev.isLinked,
+        percent: gpt5h ?? prev.percent,
+        fiveHourPercent: gpt5h ?? prev.fiveHourPercent,
+        isLinked: gptLinked ?? prev.isLinked,
       }));
     }
   }, []);
