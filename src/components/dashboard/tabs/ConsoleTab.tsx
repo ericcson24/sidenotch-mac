@@ -21,6 +21,7 @@ interface ConsoleTabProps {
   onExportSession: () => void;
   onOptimizePrompt: () => void;
   onOpenMobileSimulator: () => void;
+  promptQueueCount?: number;
 }
 
 export const ConsoleTab: React.FC<ConsoleTabProps> = ({
@@ -36,10 +37,10 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
   isSendingPrompt,
   promptInput,
   setPromptInput,
-  isComplexityDetected,
   onSendPrompt,
   onExportSession,
   onOpenMobileSimulator,
+  promptQueueCount = 0,
 }) => {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -49,28 +50,28 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
 
   const quickStarters = [
     {
-      title: 'Crear o mejorar código',
-      desc: 'Pide que cree componentes, páginas o lógica para tu app.',
-      icon: '✨',
-      badge: 'Desarrollo',
-      prompt: 'Ayúdame a mejorar este proyecto: analiza lo que tenemos y propón la siguiente funcionalidad recomendada.',
+      title: 'Crear nueva funcionalidad con el equipo',
+      desc: 'Gemini diseña la arquitectura, Claude programa y GPT prueba.',
+      icon: '👥',
+      badge: 'Multi-Agente',
+      prompt: 'Desarrollar una nueva funcionalidad completa en el proyecto con el equipo cooperativo: planificar, implementar y validar.',
     },
     {
-      title: 'Explicar este proyecto',
-      desc: 'Entiende cómo funciona la estructura de archivos y componentes.',
+      title: 'Auditar y explicar el proyecto',
+      desc: 'Entiende la estructura y dependencias en lenguaje claro.',
       icon: '📖',
       badge: 'Arquitectura',
       prompt: 'Explícame en un lenguaje claro y sencillo qué hace este proyecto, qué archivos principales tiene y cómo funciona.',
     },
     {
-      title: 'Auditar y corregir errores',
-      desc: 'Revisa si hay fallos de código, bugs o posibles problemas.',
+      title: 'Buscar y arreglar errores en equipo',
+      desc: 'Diagnóstico profundo y solución recomendada por varios agentes.',
       icon: '🛡️',
       badge: 'Diagnóstico',
       prompt: 'Revisa el código en busca de posibles errores, bugs o problemas de rendimiento y proponme los arreglos.',
     },
     {
-      title: 'Auditar vista en iPhone / Móvil',
+      title: 'Auditar diseño en iPhone / Móvil',
       desc: 'Comprueba el diseño en pantalla pequeña y áreas seguras.',
       icon: '📱',
       badge: 'Diseño',
@@ -80,51 +81,76 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
 
   return (
     <div className="h-full flex flex-col rounded-2xl bg-[#13141c] border border-white/[0.08] overflow-hidden shadow-2xl">
-      {/* 1. Model Selector Header Bar */}
+      {/* 1. Cooperative Squad Header Selector Bar */}
       <div className="p-3 border-b border-white/[0.08] flex items-center justify-between bg-black/20">
-        <div className="flex items-center gap-2">
-          {/* Segmented Selector for Models */}
+        <div className="flex items-center gap-2.5">
+          {/* Mode Selector */}
           <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 text-xs">
+            {/* Cooperative Swarm Button */}
             <button
               onClick={() => {
-                setAgentDispatchMode('auto');
+                setAgentDispatchMode('swarm');
                 sounds.playHoverTick();
               }}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                agentDispatchMode === 'auto'
-                  ? 'bg-[#0071e3] text-white font-semibold shadow-sm'
+              className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-2 font-semibold ${
+                agentDispatchMode === 'swarm' || agentDispatchMode === 'auto'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-500/25'
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>Modo Auto (Inteligente)</span>
+              <div className="flex items-center -space-x-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#D4FF00] border border-black shadow-sm" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B4A] border border-black shadow-sm" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#10A37F] border border-black shadow-sm" />
+              </div>
+              <span>Equipo Cooperativo (3 Agentes)</span>
+              <span className="text-[10px] bg-white/20 px-1.5 py-0.2 rounded font-bold">Activo</span>
             </button>
 
-            {agents.slice(0, 3).map(a => {
-              const isCurrent = agentDispatchMode === 'single' && selectedAgentId === a.id;
-              return (
-                <button
-                  key={a.id}
-                  onClick={() => {
-                    setAgentDispatchMode('single');
-                    setSelectedAgentId(a.id);
-                    sounds.playHoverTick();
-                  }}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-medium ${
-                    isCurrent
-                      ? 'bg-white/15 text-white font-semibold shadow-sm'
-                      : 'text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  {a.name.split(' ')[0]} ({a.model.split(' ')[0]})
-                </button>
-              );
-            })}
+            {/* Single Agent Option */}
+            <button
+              onClick={() => {
+                setAgentDispatchMode('single');
+                sounds.playHoverTick();
+              }}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-medium ${
+                agentDispatchMode === 'single'
+                  ? 'bg-white/15 text-white font-semibold shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              Agente Único
+            </button>
           </div>
+
+          {/* If single agent mode, show model chooser */}
+          {agentDispatchMode === 'single' && (
+            <select
+              value={selectedAgentId}
+              onChange={e => {
+                setSelectedAgentId(e.target.value);
+                sounds.playHoverTick();
+              }}
+              className="bg-black/50 border border-white/15 rounded-xl px-3 py-1.5 text-xs font-semibold text-white focus:outline-none focus:border-[#0071e3] cursor-pointer"
+            >
+              {agents.map(a => (
+                <option key={a.id} value={a.id} className="bg-[#1c1c22] text-white">
+                  {a.name} ({a.model})
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
-        {/* Clear & Export Buttons */}
+        {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {promptQueueCount > 0 && (
+            <div className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-mono flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span>{promptQueueCount} en cola</span>
+            </div>
+          )}
+
           {chatMessages.length > 0 && (
             <>
               <button
@@ -158,18 +184,20 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
         </div>
       </div>
 
-      {/* 2. Messages Stream / Welcome Cards */}
+      {/* 2. Messages Stream / Welcome Starter Screen */}
       <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-black/20">
         {chatMessages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4 space-y-6 max-w-xl mx-auto">
-            {/* Friendly Greeting */}
-            <div className="space-y-1.5">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-2xl mx-auto shadow-lg">
-                ✨
+            {/* Friendly Greeting with Cooperative Squad Banner */}
+            <div className="space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-500/20 via-blue-500/20 to-emerald-500/20 border border-white/10 flex items-center justify-center text-2xl mx-auto shadow-xl">
+                👥
               </div>
-              <h3 className="text-lg font-bold text-white tracking-tight">¿En qué puedo ayudarte hoy?</h3>
-              <p className="text-xs text-neutral-400 max-w-md">
-                Escribe directamente lo que necesitas o selecciona una opción rápida para tu proyecto en <span className="text-sky-400 font-semibold">{workspaceContext?.folderName || 'este workspace'}</span>.
+              <h3 className="text-lg font-bold text-white tracking-tight">
+                Equipo Cooperativo de Agentes Antigravity
+              </h3>
+              <p className="text-xs text-neutral-400 max-w-md leading-relaxed">
+                Pega cualquier prompt o tarea. Tus agentes colaborarán en cadena para analizar, programar y verificar en <span className="text-sky-400 font-semibold">{workspaceContext?.folderName || 'este workspace'}</span>.
               </p>
             </div>
 
@@ -185,7 +213,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
                       onSendPrompt(undefined, starter.prompt);
                     }
                   }}
-                  className="p-4 rounded-xl bg-[#171924] hover:bg-[#1d202e] border border-white/[0.08] hover:border-sky-500/40 transition-all cursor-pointer space-y-2 group active:scale-[0.98] shadow-sm"
+                  className="p-4 rounded-xl bg-[#171924] hover:bg-[#1d202e] border border-white/[0.08] hover:border-purple-500/40 transition-all cursor-pointer space-y-2 group active:scale-[0.98] shadow-sm"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-lg">{starter.icon}</span>
@@ -194,7 +222,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
                     </span>
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-white group-hover:text-sky-300 transition-colors">
+                    <div className="text-xs font-bold text-white group-hover:text-purple-300 transition-colors">
                       {starter.title}
                     </div>
                     <p className="text-[11px] text-neutral-400 leading-normal mt-0.5">
@@ -206,59 +234,70 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
             </div>
           </div>
         ) : (
-          chatMessages.map((msg, idx) => (
-            <div key={idx} className={`flex flex-col ${msg.isAgent ? 'items-start' : 'items-end'}`}>
-              <div className="text-[10px] text-neutral-400 mb-1 px-1">{msg.sender} · {msg.time}</div>
-              <div
-                className={`max-w-[85%] px-4 py-3 rounded-2xl text-xs leading-relaxed ${
-                  msg.isSwarmBadge
-                    ? 'bg-purple-500/15 border border-purple-500/30 text-purple-200 font-mono shadow-md whitespace-pre-wrap'
-                    : msg.isAgent
-                    ? 'bg-[#181a24] border border-white/10 text-neutral-100 shadow-sm whitespace-pre-wrap'
-                    : 'bg-[#0071e3] text-white shadow-md font-medium'
-                }`}
-              >
-                {msg.text}
+          chatMessages.map((msg, idx) => {
+            const isGemini = msg.sender.toLowerCase().includes('gemini') || msg.sender.toLowerCase().includes('architect');
+            const isClaude = msg.sender.toLowerCase().includes('claude') || msg.sender.toLowerCase().includes('developer');
+            const isOpenAI = msg.sender.toLowerCase().includes('openai') || msg.sender.toLowerCase().includes('gpt') || msg.sender.toLowerCase().includes('qa');
+            const isSwarmHeader = msg.isSwarmBadge;
+
+            const badgeColor = isGemini ? '#D4FF00' : isClaude ? '#FF6B4A' : isOpenAI ? '#10A37F' : '#38bdf8';
+
+            return (
+              <div key={idx} className={`flex flex-col ${msg.isAgent ? 'items-start' : 'items-end'}`}>
+                <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 mb-1 px-1 font-mono">
+                  {msg.isAgent && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: badgeColor }} />}
+                  <span className="font-semibold text-neutral-300">{msg.sender}</span>
+                  <span>·</span>
+                  <span>{msg.time}</span>
+                </div>
+                <div
+                  className={`max-w-[88%] px-4 py-3 rounded-2xl text-xs leading-relaxed ${
+                    isSwarmHeader
+                      ? 'bg-purple-500/15 border border-purple-500/30 text-purple-200 font-mono shadow-md whitespace-pre-wrap'
+                      : msg.isAgent
+                      ? 'bg-[#181a24] border border-white/10 text-neutral-100 shadow-sm whitespace-pre-wrap'
+                      : 'bg-[#0071e3] text-white shadow-md font-medium'
+                  }`}
+                >
+                  {msg.text}
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
 
         {isSendingPrompt && (
-          <div className="flex items-center gap-2.5 text-xs text-neutral-400 italic px-2 py-1">
-            <div className="w-3.5 h-3.5 rounded-full border-2 border-sky-400 border-t-transparent animate-spin" />
-            <span>{agentDispatchMode === 'auto' ? 'Analizando y ejecutando con el mejor modelo...' : `${activeAgent.name} está pensando...`}</span>
+          <div className="flex items-center gap-2.5 text-xs text-purple-300 italic px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 w-fit">
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" />
+            <span>
+              {agentDispatchMode === 'swarm' || agentDispatchMode === 'auto'
+                ? 'El equipo cooperativo está procesando en cadena (Gemini -> Claude -> GPT)...'
+                : `${activeAgent.name} está pensando...`}
+            </span>
           </div>
         )}
         <div ref={chatEndRef} />
       </div>
 
-      {/* 3. Real-time Multi-Agent Suggestion Banner */}
-      {isComplexityDetected && agentDispatchMode === 'auto' && (
-        <div className="px-4 py-2 bg-purple-500/15 border-t border-purple-500/20 flex items-center justify-between text-xs text-purple-300">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-            <span>Tarea compleja: Varios agentes colaborarán automáticamente en cadena.</span>
-          </div>
-          <span className="text-[10px] bg-purple-500/30 px-2 py-0.5 rounded-full font-bold">Auto-Swarm</span>
-        </div>
-      )}
-
-      {/* 4. Bottom Prompt Input Form */}
-      <form onSubmit={onSendPrompt} className="p-3 border-t border-white/[0.08] bg-black/40 flex items-center gap-2">
+      {/* 3. Bottom Prompt Input Form */}
+      <form onSubmit={onSendPrompt} className="p-3.5 border-t border-white/[0.08] bg-black/40 flex items-center gap-2.5">
         <input
           type="text"
           value={promptInput}
           onChange={e => setPromptInput(e.target.value)}
-          placeholder="Escribe lo que quieres que la IA haga en tu proyecto..."
-          className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#0071e3] focus:ring-1 focus:ring-[#0071e3]"
+          placeholder="Escribe una tarea para el equipo cooperativo (puedes enviar varias seguidas)..."
+          className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
         />
         <button
           type="submit"
-          disabled={!promptInput.trim() || isSendingPrompt}
-          className="px-5 py-2.5 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-bold active:scale-95 cursor-pointer transition-all disabled:opacity-40 shadow-md shadow-blue-500/20"
+          disabled={!promptInput.trim()}
+          className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold active:scale-95 cursor-pointer transition-all disabled:opacity-40 shadow-lg shadow-purple-500/25 flex items-center gap-1.5"
         >
-          Enviar
+          <span>Asignar Tarea</span>
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg>
         </button>
       </form>
     </div>

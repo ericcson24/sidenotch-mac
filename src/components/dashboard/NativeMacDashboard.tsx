@@ -76,10 +76,11 @@ export const NativeMacDashboard: React.FC = () => {
     generateAICommitMessage,
   } = useWorkspaceGit(currentWorkspace);
 
-  // Chat & Console
+  // Chat & Console & Queue
   const [promptInput, setPromptInput] = useState<string>('');
   const [isSendingPrompt, setIsSendingPrompt] = useState<boolean>(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [promptQueue, setPromptQueue] = useState<string[]>([]);
 
   // Arena
   const [arenaPrompt, setArenaPrompt] = useState<string>('');
@@ -301,41 +302,56 @@ export const NativeMacDashboard: React.FC = () => {
     }
   };
 
-  // Prompt Handler
+  // Automatic queue consumer
+  useEffect(() => {
+    if (!isSendingPrompt && promptQueue.length > 0) {
+      const nextMsg = promptQueue[0];
+      setPromptQueue(prev => prev.slice(1));
+      handleSendPrompt(undefined, nextMsg);
+    }
+  }, [isSendingPrompt, promptQueue]);
+
+  // Prompt Handler with Queue Support & Cooperative Squad
   const handleSendPrompt = async (e?: React.FormEvent, overrideText?: string) => {
     if (e) e.preventDefault();
     const userMsg = (overrideText || promptInput).trim();
-    if (!userMsg || isSendingPrompt) return;
+    if (!userMsg) return;
+
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // If currently busy, queue it and notify user
+    if (isSendingPrompt) {
+      sounds.playHoverTick();
+      setPromptQueue(prev => [...prev, userMsg]);
+      setChatMessages(prev => [
+        ...prev,
+        { sender: 'Tu', text: userMsg, time: now, isAgent: false },
+        {
+          sender: 'Equipo Cooperativo',
+          text: `⏳ Tarea añadida a la cola (${promptQueue.length + 1} en espera). Se procesará automáticamente en cuanto termine la actual.`,
+          time: now,
+          isAgent: true,
+        },
+      ]);
+      setPromptInput('');
+      return;
+    }
 
     setIsSendingPrompt(true);
     sounds.playHoverTick();
-    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     setChatMessages(prev => [...prev, { sender: 'Tu', text: userMsg, time: now, isAgent: false }]);
     setPromptInput('');
 
-    let shouldRunSwarm = agentDispatchMode === 'swarm';
-    if (agentDispatchMode === 'auto') {
-      if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-        try {
-          const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string, data: unknown) => Promise<{ isMultiAgentRecommended: boolean }> } } }).require('electron');
-          if (electron && electron.ipcRenderer) {
-            const analysis = await electron.ipcRenderer.invoke('analyze-prompt-complexity', userMsg);
-            if (analysis && analysis.isMultiAgentRecommended) shouldRunSwarm = true;
-          }
-        } catch {
-          // fallback
-        }
-      }
-    }
+    let shouldRunSwarm = agentDispatchMode === 'swarm' || agentDispatchMode === 'auto';
 
     if (shouldRunSwarm && agents.length > 1) {
       const activeSwarm = agents.slice(0, 3);
       setChatMessages(prev => [
         ...prev,
         {
-          sender: 'Orquestador Multi-Agente',
-          text: `Tarea compleja detectada. Desplegando colaboración de ${activeSwarm.length} agentes especializados:\n${activeSwarm.map((a, i) => `› Fase ${i + 1}: ${a.name} (${a.role})`).join('\n')}`,
+          sender: 'Equipo Cooperativo Antigravity',
+          text: `Desplegando colaboración de ${activeSwarm.length} agentes especializados:\n${activeSwarm.map((a, i) => `› Fase ${i + 1}: ${a.name} (${a.role})`).join('\n')}`,
           time: now,
           isAgent: true,
           isSwarmBadge: true,
@@ -345,11 +361,11 @@ export const NativeMacDashboard: React.FC = () => {
       const newTaskId = `swarm-auto-${Date.now()}`;
       const newTask: TaskItem = {
         id: newTaskId,
-        title: `[Auto-Swarm] ${userMsg}`,
+        title: `[Equipo Cooperativo] ${userMsg}`,
         assignedAgentId: 'swarm-pipeline',
         status: 'in-progress',
         timestamp: now,
-        logs: [`Orquestación multi-agente en ${currentWorkspace}: ${activeSwarm.map(a => a.name).join(' -> ')}`],
+        logs: [`Orquestación cooperativa en ${currentWorkspace}: ${activeSwarm.map(a => a.name).join(' -> ')}`],
       };
 
       const currentTasks = [newTask, ...tasks];
@@ -383,7 +399,7 @@ export const NativeMacDashboard: React.FC = () => {
             const finishedTasks = currentTasks.map(t => t.id === newTaskId ? {
               ...t,
               status: 'done' as const,
-              logs: swarmResult.stepLogs || ['Ejecución Swarm completada'],
+              logs: swarmResult.stepLogs || ['Ejecución cooperativa completada'],
             } : t);
 
             setTasks(finishedTasks);
@@ -840,6 +856,7 @@ ${chatMessages.map(m => `### ${m.sender} (${m.time})\n${m.text}\n`).join('\n---\
               onExportSession={handleExportSession}
               onOptimizePrompt={handleOptimizePrompt}
               onOpenMobileSimulator={() => setShowMobileSimulator(true)}
+              promptQueueCount={promptQueue.length}
             />
           )}
 
