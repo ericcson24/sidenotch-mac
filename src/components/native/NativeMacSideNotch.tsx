@@ -365,7 +365,7 @@ export const NativeMacSideNotch: React.FC = () => {
               )}
             </div>
 
-            {/* Direct Prompt & Dashboard Launch Button */}
+            {/* Direct Prompt Input (Minimal) */}
             <div className="pt-2 border-t border-white/[0.08] space-y-2">
               <form onSubmit={handleQuickExecute} className="flex items-center gap-1.5">
                 <input
@@ -373,7 +373,7 @@ export const NativeMacSideNotch: React.FC = () => {
                   value={quickPrompt}
                   onChange={e => setQuickPrompt(e.target.value)}
                   placeholder={`Preguntar a ${activeModel}...`}
-                  className="flex-1 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#0071e3]"
+                  className="flex-1 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition-colors"
                 />
                 <button
                   type="submit"
@@ -389,18 +389,6 @@ export const NativeMacSideNotch: React.FC = () => {
                   {quickResponse}
                 </div>
               )}
-
-              <button
-                onClick={handleOpenDashboard}
-                className="w-full py-2 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <span>Abrir Dashboard Completo</span>
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2.5">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                  <polyline points="15 3 21 3 21 9" />
-                  <line x1="10" y1="14" x2="21" y2="3" />
-                </svg>
-              </button>
             </div>
           </motion.div>
         )}
