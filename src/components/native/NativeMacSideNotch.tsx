@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { sounds } from '../../utils/soundEffects';
 
 // Subcomponents
 import { NotchFillets } from './notch/NotchFillets';
+import { NotchBubbles } from './notch/NotchBubbles';
 import { WaveformVisualizer } from './notch/WaveformVisualizer';
 import { ModelSelectorPills } from './notch/ModelSelectorPills';
 import { MiniCLIInput } from './notch/MiniCLIInput';
@@ -52,50 +53,6 @@ const microSpring = {
   stiffness: 500,
   damping: 24,
   mass: 0.4,
-};
-
-// Circular Optical Progress Ring
-const OpticalRing: React.FC<{
-  percent: number;
-  color: string;
-  children: React.ReactNode;
-  size?: number;
-  strokeWidth?: number;
-}> = ({ percent, color, children, size = 36, strokeWidth = 2.4 }) => {
-  const radius = (size - strokeWidth * 2) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const safePercent = Math.min(100, Math.max(0, percent));
-  const strokeDashoffset = circumference - (circumference * safePercent) / 100;
-
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg className="absolute inset-0 -rotate-90" width={size} height={size}>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="rgba(255, 255, 255, 0.1)"
-          strokeWidth={strokeWidth}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          className="transition-all duration-700 ease-out"
-        />
-      </svg>
-      <div className="relative z-10 flex items-center justify-center">
-        {children}
-      </div>
-    </div>
-  );
 };
 
 export const NativeMacSideNotch: React.FC = () => {
@@ -255,7 +212,7 @@ export const NativeMacSideNotch: React.FC = () => {
           // Fallback
         }
       }
-    }, 280);
+    }, 320);
   };
 
   const handleOpenDashboard = () => {
@@ -321,46 +278,87 @@ export const NativeMacSideNotch: React.FC = () => {
       ? '#FF6B4A'
       : '#10A37F';
 
+  const bubbleModels = [
+    {
+      id: 'antigravity' as const,
+      name: 'Gemini 3.7 Pro (Google AI)',
+      shortName: 'GEM',
+      percent: antigravityData.geminiFiveHour,
+      color: '#D4FF00',
+      glowColor: 'rgba(212, 255, 0, 0.4)',
+      isLinked: true,
+      badgeText: `${antigravityData.availableCredits} Cr · 5h: ${antigravityData.geminiFiveHour}%`,
+    },
+    {
+      id: 'claude' as const,
+      name: 'Claude 3.7 Sonnet (Anthropic)',
+      shortName: 'CLD',
+      percent: claudeData.percent,
+      color: '#FF6B4A',
+      glowColor: 'rgba(255, 107, 74, 0.4)',
+      isLinked: claudeData.isLinked,
+      badgeText: claudeData.isLinked ? `5h: ${claudeData.percent}%` : 'Conectar API',
+    },
+    {
+      id: 'openai' as const,
+      name: 'OpenAI GPT-4o',
+      shortName: 'GPT',
+      percent: openAIData.percent,
+      color: '#10A37F',
+      glowColor: 'rgba(16, 163, 127, 0.4)',
+      isLinked: openAIData.isLinked,
+      badgeText: openAIData.isLinked ? `Cuota: ${openAIData.percent}%` : 'Conectar API',
+    },
+  ];
+
   return (
     <div
       className="fixed top-0 right-0 h-screen flex items-center justify-end pointer-events-none select-none z-50 overflow-visible font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Helvetica_Neue',sans-serif]"
     >
       <motion.div
         layout
-        initial={{ width: 54, height: 180 }}
+        initial={{ width: 62, height: 210 }}
         animate={{
-          width: isExpanded ? 370 : 54,
-          height: isExpanded ? 460 : 180,
+          width: isExpanded ? 370 : 62,
+          height: isExpanded ? 460 : 210,
         }}
         transition={liquidSpring}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={`pointer-events-auto relative flex flex-col justify-between overflow-hidden bg-[#070709] border-l border-t border-b border-white/[0.12] shadow-2xl backdrop-blur-3xl transition-colors duration-300 ${
-          isExpanded ? 'rounded-l-[32px] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.85)]' : 'rounded-l-[24px] py-4 px-2 shadow-[0_10px_35px_rgba(0,0,0,0.6)] cursor-pointer'
+          isExpanded ? 'rounded-l-[32px] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.85)]' : 'rounded-l-[28px] py-3.5 px-2 shadow-[0_10px_35px_rgba(0,0,0,0.65)] cursor-pointer'
         }`}
       >
         {/* Concave Bezier Anchors to Screen Border */}
         <NotchFillets />
 
         {/* 
-          1. COMPACT STATE
+          1. COMPACT LIQUID BUBBLES STATE (Interactive AI Bubble Orbs)
         */}
         {!isExpanded && (
-          <div className="h-full flex flex-col items-center justify-between py-1">
-            <OpticalRing percent={currentPercent} color={currentColor} size={38} strokeWidth={2.4}>
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: currentColor }} />
-            </OpticalRing>
+          <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={microSpring}
+              className="h-full flex flex-col items-center justify-between py-1"
+            >
+              {/* Stack of Floating AI Bubble Orbs */}
+              <NotchBubbles
+                models={bubbleModels}
+                activeModel={activeModel}
+                onSelectModel={setActiveModel}
+                onExpandNotch={handleMouseEnter}
+              />
 
-            {/* Live Waveform Canvas */}
-            <div className="py-2">
-              <WaveformVisualizer color={currentColor} isExpanded={false} />
-            </div>
-
-            <div className="flex flex-col items-center gap-1 font-mono text-[10px] font-bold text-neutral-300">
-              <span>{currentPercent}%</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            </div>
-          </div>
+              {/* Bottom Pulse Dot & Wave indicator */}
+              <div className="flex items-center gap-1 mt-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[8px] font-mono text-neutral-400 font-bold">120Hz</span>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         )}
 
         {/* 
@@ -427,9 +425,9 @@ export const NativeMacSideNotch: React.FC = () => {
                 <span className="text-sm font-bold font-mono" style={{ color: currentColor }}>
                   {currentPercent}%
                 </span>
-                <OpticalRing percent={currentPercent} color={currentColor} size={34} strokeWidth={2.4}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: currentColor }} />
-                </OpticalRing>
+                <div className="w-8 h-8 rounded-full bg-black/50 border border-white/10 flex items-center justify-center">
+                  <div className="w-3 h-3 rounded-full shadow-md" style={{ backgroundColor: currentColor }} />
+                </div>
               </div>
             </div>
 
