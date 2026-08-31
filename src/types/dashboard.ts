@@ -139,3 +139,9 @@ export interface ErrorDiagnosis {
   explanation: string;
   recommendedFix: string;
 }
+
+declare global {
+  interface Window {
+    electron?: any;
+  }
+}

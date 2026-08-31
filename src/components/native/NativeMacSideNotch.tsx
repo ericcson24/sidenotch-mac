@@ -5,8 +5,6 @@ import { sounds } from '../../utils/soundEffects';
 // Subcomponents
 import { NotchFillets } from './notch/NotchFillets';
 import { NotchBubbles } from './notch/NotchBubbles';
-import { WaveformVisualizer } from './notch/WaveformVisualizer';
-import { ModelSelectorPills } from './notch/ModelSelectorPills';
 import { MiniCLIInput } from './notch/MiniCLIInput';
 
 interface ClaudeData {
@@ -57,7 +55,7 @@ const microSpring = {
 
 export const NativeMacSideNotch: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [activeModel, setActiveModel] = useState<'antigravity' | 'claude' | 'openai'>('antigravity');
+  const [activeModel, setActiveModel] = useState<'claude' | 'openai' | 'antigravity'>('claude');
   const [quickPrompt, setQuickPrompt] = useState<string>('');
   const [quickResponse, setQuickResponse] = useState<string>('');
   const [isProcessingQuickPrompt, setIsProcessingQuickPrompt] = useState<boolean>(false);
@@ -86,7 +84,7 @@ export const NativeMacSideNotch: React.FC = () => {
 
   const [antigravityData, setAntigravityData] = useState<AntigravityData>({
     isLinked: true,
-    plan: 'Google AI Pro',
+    plan: 'Google AI Studio',
     availableCredits: 2016,
     enableOverages: true,
     geminiFiveHour: 99,
@@ -98,134 +96,105 @@ export const NativeMacSideNotch: React.FC = () => {
   });
 
   const updateTelemetry = useCallback((data: {
-    antigravity?: {
-      plan?: string;
-      availableCredits?: number;
-      enableOverages?: boolean;
-      geminiModels?: { fiveHourRemaining: number; weeklyRemaining: number; fiveHourRefreshText: string; weeklyRefreshText: string };
-      claudeGptModels?: { fiveHourRemaining: number; weeklyRemaining: number };
-    };
-    claude?: { isLinked: boolean; percent: number; maxBadge: string; error?: string };
-    openai?: { isLinked: boolean; percent: number; maxBadge: string; error?: string };
+    geminiFiveHour?: number;
+    geminiFiveHourText?: string;
+    geminiWeekly?: number;
+    geminiWeeklyText?: string;
+    credits?: number;
+    plan?: string;
+    enableOverages?: boolean;
+    claudeFiveHour?: number;
+    claudeWeekly?: number;
+    gptFiveHour?: number;
+    claudeLinked?: boolean;
+    openaiLinked?: boolean;
   }) => {
-    if (!data) return;
-
-    if (data.antigravity) {
+    if (data.geminiFiveHour !== undefined) {
       setAntigravityData(prev => ({
         ...prev,
-        isLinked: true,
-        plan: data.antigravity?.plan || prev.plan,
-        availableCredits: data.antigravity?.availableCredits ?? prev.availableCredits,
-        enableOverages: data.antigravity?.enableOverages ?? prev.enableOverages,
-        geminiFiveHour: data.antigravity?.geminiModels?.fiveHourRemaining ?? prev.geminiFiveHour,
-        geminiFiveHourText: data.antigravity?.geminiModels?.fiveHourRefreshText || prev.geminiFiveHourText,
-        geminiWeekly: data.antigravity?.geminiModels?.weeklyRemaining ?? prev.geminiWeekly,
-        geminiWeeklyText: data.antigravity?.geminiModels?.weeklyRefreshText || prev.geminiWeeklyText,
-        claudeGptFiveHour: data.antigravity?.claudeGptModels?.fiveHourRemaining ?? prev.claudeGptFiveHour,
-        claudeGptWeekly: data.antigravity?.claudeGptModels?.weeklyRemaining ?? prev.claudeGptWeekly,
+        geminiFiveHour: data.geminiFiveHour ?? prev.geminiFiveHour,
+        geminiFiveHourText: data.geminiFiveHourText || prev.geminiFiveHourText,
+        geminiWeekly: data.geminiWeekly ?? prev.geminiWeekly,
+        geminiWeeklyText: data.geminiWeeklyText || prev.geminiWeeklyText,
+        availableCredits: data.credits ?? prev.availableCredits,
+        plan: data.plan || prev.plan,
+        enableOverages: data.enableOverages ?? prev.enableOverages,
       }));
     }
 
-    if (data.claude) {
+    if (data.claudeFiveHour !== undefined || data.claudeLinked !== undefined) {
       setClaudeData(prev => ({
         ...prev,
-        isLinked: data.claude?.isLinked ?? prev.isLinked,
-        percent: data.claude?.percent ?? prev.percent,
-        maxBadge: data.claude?.maxBadge ?? prev.maxBadge,
+        percent: data.claudeFiveHour ?? prev.percent,
+        fiveHourPercent: data.claudeFiveHour ?? prev.fiveHourPercent,
+        weeklyPercent: data.claudeWeekly ?? prev.weeklyPercent,
+        isLinked: data.claudeLinked ?? prev.isLinked,
       }));
     }
 
-    if (data.openai) {
+    if (data.gptFiveHour !== undefined || data.openaiLinked !== undefined) {
       setOpenAIData(prev => ({
         ...prev,
-        isLinked: data.openai?.isLinked ?? prev.isLinked,
-        percent: data.openai?.percent ?? prev.percent,
-        maxBadge: data.openai?.maxBadge ?? prev.maxBadge,
+        percent: data.gptFiveHour ?? prev.percent,
+        isLinked: data.openaiLinked ?? prev.isLinked,
+        tiers: [
+          { label: 'GPT-4o', percent: data.gptFiveHour ?? 100, resetText: '5h restantes' },
+          { label: 'o3-mini', percent: data.gptFiveHour ?? 100, resetText: '5h restantes' },
+        ],
       }));
     }
   }, []);
 
-  const fetchLiveQuotas = useCallback(async () => {
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (channel: string) => Promise<unknown> } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          const data = (await electron.ipcRenderer.invoke('get-real-quotas')) as Parameters<typeof updateTelemetry>[0];
-          updateTelemetry(data);
-        }
-      } catch {
-        // Fallback
-      }
+  useEffect(() => {
+    const handleQuotaUpdate = (data: Parameters<typeof updateTelemetry>[0]) => {
+      updateTelemetry(data);
+    };
+
+    if (window.electron?.onQuotaUpdate) {
+      window.electron.onQuotaUpdate(handleQuotaUpdate);
     }
+
+    if (window.electron?.getRealQuotas) {
+      window.electron.getRealQuotas().then(quotas => {
+        if (quotas) updateTelemetry(quotas);
+      });
+    }
+
+    const interval = setInterval(() => {
+      if (window.electron?.getRealQuotas) {
+        window.electron.getRealQuotas().then(quotas => {
+          if (quotas) updateTelemetry(quotas);
+        });
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
   }, [updateTelemetry]);
 
-  useEffect(() => {
-    fetchLiveQuotas();
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { on: (ch: string, cb: (e: unknown, data: unknown) => void) => void; removeAllListeners: (ch: string) => void } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          electron.ipcRenderer.on('quotas-updated', (_event, data) => {
-            updateTelemetry(data as Parameters<typeof updateTelemetry>[0]);
-          });
-          return () => {
-            electron.ipcRenderer.removeAllListeners('quotas-updated');
-          };
-        }
-      } catch {
-        // Fallback
-      }
-    }
-  }, [fetchLiveQuotas, updateTelemetry]);
-
   const handleMouseEnter = () => {
-    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+    if (collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current);
+      collapseTimerRef.current = null;
+    }
     if (!isExpanded) {
-      setIsExpanded(true);
       sounds.playIslandExpand();
-      if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-        try {
-          const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { send: (ch: string) => void } } }).require('electron');
-          if (electron && electron.ipcRenderer) {
-            electron.ipcRenderer.send('notch-hover-enter');
-          }
-        } catch {
-          // Fallback
-        }
-      }
+      setIsExpanded(true);
     }
   };
 
   const handleMouseLeave = () => {
-    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
     collapseTimerRef.current = setTimeout(() => {
-      setIsExpanded(false);
       sounds.playIslandCollapse();
+      setIsExpanded(false);
+      setQuickPrompt('');
       setQuickResponse('');
-      if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-        try {
-          const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { send: (ch: string) => void } } }).require('electron');
-          if (electron && electron.ipcRenderer) {
-            electron.ipcRenderer.send('notch-hover-leave');
-          }
-        } catch {
-          // Fallback
-        }
-      }
-    }, 320);
+    }, 450);
   };
 
   const handleOpenDashboard = () => {
-    sounds.playIslandExpand();
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { send: (ch: string) => void } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          electron.ipcRenderer.send('open-settings-window');
-        }
-      } catch {
-        // Fallback
-      }
+    sounds.playHoverTick();
+    if (window.electron?.openDashboard) {
+      window.electron.openDashboard();
     }
   };
 
@@ -234,49 +203,48 @@ export const NativeMacSideNotch: React.FC = () => {
     if (!quickPrompt.trim() || isProcessingQuickPrompt) return;
 
     setIsProcessingQuickPrompt(true);
-    sounds.playHoverTick();
+    sounds.playShutter();
 
-    if (typeof window !== 'undefined' && (window as unknown as { require?: (mod: string) => unknown }).require) {
-      try {
-        const electron = (window as unknown as { require: (mod: string) => { ipcRenderer: { invoke: (ch: string, data: unknown) => Promise<{ success: boolean; text: string; error?: string }> } } }).require('electron');
-        if (electron && electron.ipcRenderer) {
-          const res = await electron.ipcRenderer.invoke('execute-single-agent', {
-            agent: {
-              id: 'agent-quick',
-              name: activeModel === 'antigravity' ? 'Gemini 3.7 Engine' : activeModel === 'claude' ? 'Claude 3.7 Sonnet' : 'OpenAI GPT-4o',
-              model: activeModel === 'antigravity' ? 'Gemini 3.7 Pro' : activeModel === 'claude' ? 'Claude 3.7 Sonnet' : 'GPT-4o',
-              role: 'Desarrollo Rápido',
-            },
-            prompt: quickPrompt.trim(),
-            workspace: '/Users/eric/Desktop/Applicacion Sidebar',
-          });
-
-          if (res && res.text) {
-            setQuickResponse(res.text);
-            sounds.playIslandExpand();
-          } else {
-            setQuickResponse(res.error || 'Instrucción procesada.');
-          }
-        }
-      } catch (err) {
-        setQuickResponse(`Error: ${err}`);
+    try {
+      if (window.electron?.sendPrompt) {
+        const response = await window.electron.sendPrompt(
+          `[Notch Direct Execution · ${activeModel.toUpperCase()}] ${quickPrompt.trim()}`,
+          activeModel === 'antigravity' ? 'gemini-3.7-pro' : activeModel === 'claude' ? 'claude-3.7-sonnet' : 'gpt-4o'
+        );
+        setQuickResponse(response?.text || 'Tarea procesada correctamente.');
+      } else {
+        setQuickResponse('Instrucción enviada.');
       }
+    } catch {
+      setQuickResponse('Error al procesar.');
+    } finally {
+      setIsProcessingQuickPrompt(false);
     }
-    setIsProcessingQuickPrompt(false);
-    setQuickPrompt('');
   };
 
-  const currentPercent = activeModel === 'antigravity'
-    ? antigravityData.geminiFiveHour
-    : activeModel === 'claude'
-      ? claudeData.percent
-      : openAIData.percent;
+  const currentColor = activeModel === 'claude'
+    ? '#FF6B4A'
+    : activeModel === 'openai'
+      ? '#10A37F'
+      : '#D4FF00';
 
-  const currentColor = activeModel === 'antigravity'
-    ? '#D4FF00'
-    : activeModel === 'claude'
-      ? '#FF6B4A'
-      : '#10A37F';
+  const currentPercent = activeModel === 'claude'
+    ? claudeData.percent
+    : activeModel === 'openai'
+      ? openAIData.percent
+      : antigravityData.geminiFiveHour;
+
+  const currentModelName = activeModel === 'claude'
+    ? 'Claude 3.7 Sonnet'
+    : activeModel === 'openai'
+      ? 'OpenAI GPT-4o'
+      : 'Gemini 3.7 Pro';
+
+  const currentPlan = activeModel === 'claude'
+    ? (claudeData.isLinked ? 'Anthropic Pro' : 'Sin conectar')
+    : activeModel === 'openai'
+      ? (openAIData.isLinked ? 'OpenAI Tier 1' : 'Sin conectar')
+      : antigravityData.plan;
 
   const bubbleModels = [
     {
@@ -319,21 +287,21 @@ export const NativeMacSideNotch: React.FC = () => {
         layout
         initial={{ width: 56, height: 260 }}
         animate={{
-          width: isExpanded ? 370 : 56,
-          height: isExpanded ? 460 : 260,
+          width: isExpanded ? 360 : 56,
+          height: isExpanded ? 440 : 260,
         }}
         transition={liquidSpring}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={`pointer-events-auto relative flex flex-col justify-between overflow-hidden bg-[#050508] border-l border-t border-b border-white/[0.12] shadow-2xl backdrop-blur-3xl transition-colors duration-300 ${
-          isExpanded ? 'rounded-l-[32px] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.85)]' : 'rounded-l-[26px] py-3.5 px-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.75)] cursor-pointer'
+          isExpanded ? 'rounded-l-[30px] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.88)]' : 'rounded-l-[26px] py-3.5 px-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.75)] cursor-pointer'
         }`}
       >
         {/* Concave Bezier Anchors to Screen Border */}
         <NotchFillets />
 
         {/* 
-          1. COMPACT LIQUID BUBBLES STATE (Interactive AI Badges like Reference Design)
+          1. COMPACT LIQUID BUBBLES STATE (CodeBurn CapacityDock Rail)
         */}
         {!isExpanded && (
           <AnimatePresence>
@@ -344,7 +312,6 @@ export const NativeMacSideNotch: React.FC = () => {
               transition={microSpring}
               className="h-full flex flex-col items-center justify-between"
             >
-              {/* Stack of Floating AI Badges + Settings Button */}
               <NotchBubbles
                 models={bubbleModels}
                 activeModel={activeModel}
@@ -357,78 +324,106 @@ export const NativeMacSideNotch: React.FC = () => {
         )}
 
         {/* 
-          2. EXPANDED MONOLITH STATE
+          2. EXPANDED CAPACITY DOCK DETAIL STATE (CodeBurn CapacityDockDetailView)
         */}
         {isExpanded && (
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={microSpring}
-            className="h-full flex flex-col justify-between space-y-3.5"
+            className="h-full flex flex-col justify-between space-y-3"
           >
-            {/* Top Bar with Brand & Dashboard Trigger */}
+            {/* Header: Provider Title, Plan Badge & Settings Button */}
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: currentColor }} />
-                <span className="text-xs font-bold tracking-tight text-white uppercase">SideNotch AI</span>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md">120Hz</span>
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: currentColor }} />
+                <span className="text-sm font-semibold text-[#FAF5E6] tracking-tight">{currentModelName} Usage</span>
               </div>
 
-              <button
-                onClick={handleOpenDashboard}
-                title="Abrir Dashboard Completo"
-                className="p-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-neutral-300 transition-colors cursor-pointer"
-              >
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
-                  <polyline points="15 3 21 3 21 9" />
-                  <polyline points="9 21 3 21 3 15" />
-                  <line x1="21" y1="3" x2="14" y2="10" />
-                  <line x1="3" y1="21" x2="10" y2="14" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Model Selector Segmented Pills */}
-            <ModelSelectorPills
-              activeModel={activeModel}
-              setActiveModel={setActiveModel}
-              claudeLinked={claudeData.isLinked}
-              openaiLinked={openAIData.isLinked}
-            />
-
-            {/* Quantum Live Waveform Spectrum */}
-            <div className="p-3 rounded-2xl bg-black/50 border border-white/[0.06] flex items-center justify-between">
-              <div className="space-y-0.5">
-                <div className="text-[11px] font-mono font-bold text-white">Quantum Spectral Waveform</div>
-                <div className="text-[9.5px] font-mono text-neutral-400">Latencia estimada: &lt; 28ms · Zero Copy</div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-medium text-neutral-400 bg-white/[0.06] px-2 py-0.5 rounded-md border border-white/10">
+                  {currentPlan}
+                </span>
+                <button
+                  onClick={handleOpenDashboard}
+                  title="Abrir Dashboard Completo"
+                  className="p-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-neutral-300 hover:text-white transition-colors cursor-pointer"
+                >
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2">
+                    <polyline points="15 3 21 3 21 9" />
+                    <polyline points="9 21 3 21 3 15" />
+                    <line x1="21" y1="3" x2="14" y2="10" />
+                    <line x1="3" y1="21" x2="10" y2="14" />
+                  </svg>
+                </button>
               </div>
-              <WaveformVisualizer color={currentColor} isExpanded={true} />
             </div>
 
-            {/* Quota Telemetry Gauges */}
-            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/[0.06] flex items-center justify-between">
+            {/* Model Selector Segmented Tabs */}
+            <div className="p-1 rounded-xl bg-black/50 border border-white/[0.06] flex items-center gap-1">
+              {[
+                { id: 'claude' as const, label: 'Claude', color: '#FF6B4A' },
+                { id: 'openai' as const, label: 'OpenAI', color: '#10A37F' },
+                { id: 'antigravity' as const, label: 'Gemini', color: '#D4FF00' },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveModel(tab.id); sounds.playHoverTick(); }}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    activeModel === tab.id
+                      ? 'bg-white/10 text-white shadow-sm border border-white/10'
+                      : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tab.color }} />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Capacity Breakdown Rows (CodeBurn Style) */}
+            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/[0.06] space-y-2.5">
+              {/* Row 1: 5-Hour Limit */}
               <div className="space-y-1">
-                <div className="text-xs font-bold text-white">
-                  {activeModel === 'antigravity' ? 'Cuota Gemini 3.7' : activeModel === 'claude' ? 'Cuota Claude 3.7' : 'Cuota OpenAI GPT'}
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-neutral-300">5-hour limit</span>
+                  <span className="font-mono font-bold text-[#FAF5E6]">{currentPercent}%</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${currentPercent}%`, backgroundColor: currentColor }}
+                  />
                 </div>
                 <div className="text-[10px] text-neutral-400 font-mono">
-                  {activeModel === 'antigravity' ? antigravityData.geminiFiveHourText : 'Sincronizado con Antigravity Quota Reader'}
+                  {activeModel === 'antigravity' ? antigravityData.geminiFiveHourText : 'Recarga automática calculada'}
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-bold font-mono" style={{ color: currentColor }}>
-                  {currentPercent}%
-                </span>
-                <div className="w-8 h-8 rounded-full bg-black/50 border border-white/10 flex items-center justify-center">
-                  <div className="w-3 h-3 rounded-full shadow-md" style={{ backgroundColor: currentColor }} />
+              {/* Row 2: Weekly Limit (if Gemini) or Credits */}
+              {activeModel === 'antigravity' && (
+                <div className="space-y-1 pt-1.5 border-t border-white/[0.06]">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-neutral-300">Weekly limit</span>
+                    <span className="font-mono font-bold text-[#FAF5E6]">{antigravityData.geminiWeekly}%</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700 ease-out bg-[#D4FF00]"
+                      style={{ width: `${antigravityData.geminiWeekly}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-neutral-400 font-mono">
+                    <span>{antigravityData.geminiWeeklyText}</span>
+                    <span className="text-white font-semibold">{antigravityData.availableCredits} cr</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Mini-CLI Direct Prompt Input */}
             <MiniCLIInput
-              activeModelName={activeModel === 'antigravity' ? 'Gemini 3.7' : activeModel === 'claude' ? 'Claude 3.7' : 'GPT-4o'}
+              activeModelName={currentModelName}
               quickPrompt={quickPrompt}
               setQuickPrompt={setQuickPrompt}
               quickResponse={quickResponse}
