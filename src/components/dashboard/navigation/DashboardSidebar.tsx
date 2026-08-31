@@ -36,6 +36,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       label: 'Cuotas y Modelos',
       description: 'Gemini, Claude y GPT',
       badge: `${geminiFiveHour}%`,
+      badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
           <line x1="18" y1="20" x2="18" y2="10" />
@@ -47,7 +48,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     {
       id: 'git-manager' as DashboardTab,
       label: 'Proyecto & Git',
-      description: 'Archivos y cambios',
+      description: 'Archivos y control de cambios',
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
           <circle cx="18" cy="18" r="3" />
@@ -61,7 +62,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       id: 'tools' as DashboardTab,
       label: 'Herramientas Pro',
       description: 'Arena 4x, Swarm, Depurador',
-      badge: '5',
+      badge: '6',
+      badgeColor: 'text-purple-300 bg-purple-500/15 border-purple-500/25',
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
           <polygon points="12 2 2 7 12 12 22 7 12 2" />
@@ -73,7 +75,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     {
       id: 'settings' as DashboardTab,
       label: 'Ajustes',
-      description: 'Notch y cuentas',
+      description: 'Preferencias y arranque',
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2">
           <circle cx="12" cy="12" r="3" />
@@ -83,24 +85,24 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     },
   ];
 
-  // Map sub-tabs into tools if active
   const isToolsActive = ['arena', 'swarm', 'debugger', 'code-viewer', 'scratchpad', 'agents-context'].includes(activeTab) || activeTab === 'tools';
 
   return (
-    <nav className="w-60 bg-[#0f0f13]/95 border-r border-white/[0.08] flex flex-col justify-between shrink-0 p-3 select-none backdrop-blur-2xl">
+    <nav className="w-64 bg-[#111218] border-r border-white/[0.08] flex flex-col justify-between shrink-0 p-3 pt-12 select-none">
       <div className="space-y-4">
-        {/* macOS Traffic Lights + App Title */}
-        <div className="flex items-center justify-between px-2 pt-1 pb-2 border-b border-white/[0.06] [-webkit-app-region:drag]">
+        {/* App Title Header */}
+        <div className="px-3 pb-3 border-b border-white/[0.06] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] shadow-sm" />
-            <div className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] shadow-sm" />
-            <div className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] shadow-sm" />
+            <div className="w-5 h-5 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-blue-500/30">
+              S
+            </div>
+            <span className="text-xs font-bold text-white tracking-wide">SideNotch AI</span>
           </div>
-          <span className="text-[11px] font-bold tracking-wider text-neutral-400 uppercase font-mono">SideNotch</span>
+          <span className="text-[10px] font-mono text-neutral-400 bg-white/[0.04] px-2 py-0.5 rounded-full border border-white/[0.06]">v1.0</span>
         </div>
 
         {/* Primary Clean Navigation List */}
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {navItems.map(item => {
             const isSelected = item.id === 'tools' ? isToolsActive : activeTab === item.id;
             return (
@@ -110,7 +112,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all cursor-pointer text-left ${
                   isSelected
                     ? 'bg-[#0071e3] text-white font-semibold shadow-lg shadow-blue-500/25'
-                    : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white'
+                    : 'text-neutral-300 hover:bg-white/[0.05] hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -118,8 +120,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                     {item.icon}
                   </div>
                   <div>
-                    <div className="text-[13px] leading-tight">{item.label}</div>
-                    <div className={`text-[10px] leading-tight mt-0.5 ${isSelected ? 'text-blue-100' : 'text-neutral-500'}`}>
+                    <div className="text-[13px] leading-tight font-medium">{item.label}</div>
+                    <div className={`text-[10.5px] leading-tight mt-0.5 ${isSelected ? 'text-blue-100/90' : 'text-neutral-400'}`}>
                       {item.description}
                     </div>
                   </div>
@@ -127,10 +129,10 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
                 {item.badge && (
                   <span
-                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                    className={`px-2 py-0.5 rounded-md text-[10.5px] font-mono font-bold border ${
                       isSelected
-                        ? 'bg-white/20 text-white'
-                        : 'bg-white/[0.06] text-neutral-400'
+                        ? 'bg-white/20 text-white border-transparent'
+                        : item.badgeColor
                     }`}
                   >
                     {item.badge}
@@ -143,23 +145,23 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       </div>
 
       {/* Bottom Status Card */}
-      <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-2">
+      <div className="p-3.5 rounded-2xl bg-[#161822] border border-white/[0.06] space-y-2.5 shadow-sm">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-neutral-400 font-medium">Google AI Pro</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-neutral-200 font-semibold">Google AI Pro</span>
+          </div>
           <span className="text-emerald-400 font-bold font-mono">{geminiFiveHour}%</span>
         </div>
-        <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+        <div className="w-full h-1.5 rounded-full bg-black/40 overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400 transition-all duration-500"
             style={{ width: `${geminiFiveHour}%` }}
           />
         </div>
-        <div className="text-[10.5px] text-neutral-500 flex items-center justify-between font-mono pt-0.5">
-          <span>{credits} créditos</span>
-          <span className="text-emerald-400 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Listo
-          </span>
+        <div className="text-[11px] text-neutral-400 flex items-center justify-between font-mono pt-0.5">
+          <span>{credits.toLocaleString()} créditos</span>
+          <span className="text-neutral-300">5 horas</span>
         </div>
       </div>
     </nav>
