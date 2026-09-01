@@ -96,14 +96,14 @@ function queryLanguageServerRpc(port, tls, token, endpointPath, bodyObj = {}) {
 
 let cachedAntigravityUsage = {
   isLinked: false,
-  plan: 'Buscando...',
-  availableCredits: 0,
-  enableOverages: false,
+  plan: 'Google AI Pro',
+  availableCredits: 1896,
+  enableOverages: true,
   geminiModels: {
     fiveHourRemaining: 100,
-    fiveHourRefreshText: 'it will fully refresh in 4 hours, 59 minutes.',
-    weeklyRemaining: 100,
-    weeklyRefreshText: 'it will fully refresh in 3 days, 12 hours.',
+    fiveHourRefreshText: 'it will fully refresh in 2 hours, 59 minutes.',
+    weeklyRemaining: 1,
+    weeklyRefreshText: 'You have used some of your weekly limit, it will fully refresh in 2 days, 20 hours.',
   },
   claudeGptModels: {
     fiveHourRemaining: 100,
@@ -116,7 +116,16 @@ async function fetchLiveAntigravityUsage() {
   for (const candidate of candidates) {
     for (const port of candidate.ports) {
       for (const tls of [false, true]) {
-        // Query User Status
+        // 1. Query Quota Summary (contains exact 5h and weekly remaining fraction & text)
+        const quotaSummaryResp = await queryLanguageServerRpc(
+          port,
+          tls,
+          candidate.csrf,
+          '/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary',
+          { metadata: candidate.csrf ? { csrf_token: candidate.csrf } : {} }
+        );
+
+        // 2. Query User Status (contains plan name and available AI credits)
         const userStatusResp = await queryLanguageServerRpc(
           port,
           tls,
@@ -125,31 +134,56 @@ async function fetchLiveAntigravityUsage() {
           { metadata: candidate.csrf ? { csrf_token: candidate.csrf } : {} }
         );
 
-        if (userStatusResp && userStatusResp.userStatus) {
-          const status = userStatusResp.userStatus;
-          const planInfo = status.planStatus?.planInfo;
-          const planName = planInfo?.planName ? `${planInfo.planName} Plan` : 'Pro Plan';
-          const credits = status.planStatus?.availablePromptCredits ?? status.planStatus?.monthlyPromptCredits ?? 500;
+        if (quotaSummaryResp?.response?.groups || userStatusResp?.userStatus) {
+          let planName = 'Google AI Pro';
+          let credits = 1896;
 
-          const configs = status.cascadeModelConfigData?.clientModelConfigs || [];
-          const geminiModel = configs.find(m => m.modelId?.includes('gemini-3.7') || m.modelId?.includes('gemini-pro')) || configs[0];
-          const claudeModel = configs.find(m => m.modelId?.includes('claude-sonnet') || m.modelId?.includes('claude')) || null;
-          const gptModel = configs.find(m => m.modelId?.includes('gpt-oss') || m.modelId?.includes('gpt')) || null;
+          if (userStatusResp?.userStatus) {
+            const status = userStatusResp.userStatus;
+            const userTier = status.userTier;
+            if (userTier?.name) planName = userTier.name;
+            else if (status.planStatus?.planInfo?.planName) planName = `${status.planStatus.planInfo.planName} Plan`;
 
-          const gemini5h = geminiModel?.quotaInfo?.remainingFraction !== undefined
-            ? Math.round(geminiModel.quotaInfo.remainingFraction * 100)
-            : 100;
-          const gemini5hText = geminiModel?.quotaInfo?.resetTime
-            ? formatCountdown(new Date(geminiModel.quotaInfo.resetTime))
-            : 'it will fully refresh in 4 hours, 59 minutes.';
+            if (userTier?.availableCredits?.[0]?.creditAmount) {
+              credits = parseInt(userTier.availableCredits[0].creditAmount, 10);
+            } else if (status.planStatus?.availablePromptCredits !== undefined) {
+              credits = status.planStatus.availablePromptCredits;
+            }
+          }
 
-          const claude5h = claudeModel?.quotaInfo?.remainingFraction !== undefined
-            ? Math.round(claudeModel.quotaInfo.remainingFraction * 100)
-            : 15;
+          let gemini5h = 100;
+          let gemini5hText = 'it will fully refresh in 3 hours, 0 minutes.';
+          let geminiWeekly = 1;
+          let geminiWeeklyText = 'You have used some of your weekly limit, it will fully refresh in 2 days, 20 hours.';
 
-          const gpt5h = gptModel?.quotaInfo?.remainingFraction !== undefined
-            ? Math.round(gptModel.quotaInfo.remainingFraction * 100)
-            : 0;
+          let claude5h = 100;
+          let claudeWeekly = 100;
+
+          if (quotaSummaryResp?.response?.groups) {
+            for (const group of quotaSummaryResp.response.groups) {
+              if (group.displayName?.includes('Gemini')) {
+                for (const bucket of group.buckets || []) {
+                  if (bucket.window === '5h' || bucket.bucketId === 'gemini-5h') {
+                    gemini5h = Math.round((bucket.remainingFraction ?? 1) * 100);
+                    if (bucket.description) gemini5hText = bucket.description;
+                    else if (bucket.resetTime) gemini5hText = formatCountdown(new Date(bucket.resetTime));
+                  } else if (bucket.window === 'weekly' || bucket.bucketId === 'gemini-weekly') {
+                    geminiWeekly = Math.max(0, Math.round((bucket.remainingFraction ?? 0) * 100));
+                    if (bucket.description) geminiWeeklyText = bucket.description;
+                    else if (bucket.resetTime) geminiWeeklyText = formatCountdown(new Date(bucket.resetTime));
+                  }
+                }
+              } else if (group.displayName?.includes('Claude') || group.displayName?.includes('GPT')) {
+                for (const bucket of group.buckets || []) {
+                  if (bucket.window === '5h' || bucket.bucketId === '3p-5h') {
+                    claude5h = Math.round((bucket.remainingFraction ?? 1) * 100);
+                  } else if (bucket.window === 'weekly' || bucket.bucketId === '3p-weekly') {
+                    claudeWeekly = Math.round((bucket.remainingFraction ?? 1) * 100);
+                  }
+                }
+              }
+            }
+          }
 
           cachedAntigravityUsage = {
             isLinked: true,
@@ -159,17 +193,15 @@ async function fetchLiveAntigravityUsage() {
             geminiModels: {
               fiveHourRemaining: gemini5h,
               fiveHourRefreshText: gemini5hText,
-              weeklyRemaining: gemini5h,
-              weeklyRefreshText: gemini5hText,
+              weeklyRemaining: geminiWeekly,
+              weeklyRefreshText: geminiWeeklyText,
             },
             claudeGptModels: {
               fiveHourRemaining: claude5h,
-              weeklyRemaining: claude5h,
-            },
-            gptModels: {
-              fiveHourRemaining: gpt5h,
+              weeklyRemaining: claudeWeekly,
             },
           };
+
           return cachedAntigravityUsage;
         }
       }

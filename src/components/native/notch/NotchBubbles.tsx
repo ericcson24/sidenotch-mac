@@ -26,7 +26,7 @@ export const NotchBubbles: React.FC<NotchBubblesProps> = ({
   onSelectModel,
   onOpenDashboard,
 }) => {
-  // Render provider SVG icons (exact CodeBurn style)
+  // Render provider SVG icons (100% vector SVGs, 0 emojis)
   const renderModelIcon = (id: 'claude' | 'openai' | 'antigravity') => {
     if (id === 'claude') {
       // Claude Anthropic Asterisk / Spark
@@ -44,11 +44,11 @@ export const NotchBubbles: React.FC<NotchBubblesProps> = ({
         </svg>
       );
     }
-    // Kiro / Gemini / Antigravity
+    // Google Gemini / Antigravity Sparkle Star
     return (
-      <span className="font-bold font-sans text-sm tracking-tighter text-white">
-        K<span className="text-[10px] align-super">˙</span>
-      </span>
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white text-white">
+        <path d="M12 1L14.7 9.3L23 12L14.7 14.7L12 23L9.3 14.7L1 12L9.3 9.3L12 1Z" />
+      </svg>
     );
   };
 
@@ -57,7 +57,7 @@ export const NotchBubbles: React.FC<NotchBubblesProps> = ({
       {/* 3 AI Model Squircles */}
       {models.map((model) => {
         const isActive = activeModel === model.id;
-        const isRedAccent = model.id === 'antigravity' || model.percent >= 90;
+        const isRedAccent = model.percent <= 15;
 
         return (
           <div
@@ -72,7 +72,7 @@ export const NotchBubbles: React.FC<NotchBubblesProps> = ({
             }}
             className="group relative cursor-pointer flex flex-col items-center justify-center transition-transform duration-150 active:scale-95"
           >
-            {/* Squircle Button (CodeBurn Style) */}
+            {/* Squircle Button */}
             <div
               className={`relative w-11 h-11 rounded-[14px] flex items-center justify-center shadow-lg transition-all ${
                 isRedAccent
