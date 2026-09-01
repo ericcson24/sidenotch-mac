@@ -41,7 +41,7 @@ interface AntigravityData {
 
 export const NativeMacSideNotch: React.FC = () => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
-  const [activeModel, setActiveModel] = useState<'claude' | 'openai' | 'antigravity'>('claude');
+  const [activeModel, setActiveModel] = useState<'claude' | 'openai' | 'antigravity'>('antigravity');
   const [quickPrompt, setQuickPrompt] = useState<string>('');
   const [quickResponse, setQuickResponse] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -71,13 +71,13 @@ export const NativeMacSideNotch: React.FC = () => {
 
   const [antigravityData, setAntigravityData] = useState<AntigravityData>({
     isLinked: true,
-    plan: 'Pro Plan',
-    availableCredits: 2016,
+    plan: 'Google AI Pro',
+    availableCredits: 1896,
     enableOverages: true,
     geminiFiveHour: 100,
-    geminiFiveHourText: 'Resets in 4h 59m',
-    geminiWeekly: 42,
-    geminiWeeklyText: 'Resets in 3d 12h',
+    geminiFiveHourText: 'it will fully refresh in 2 hours, 59 minutes.',
+    geminiWeekly: 1,
+    geminiWeeklyText: 'You have used some of your weekly limit, it will fully refresh in 2 days, 20 hours.',
   });
 
   const updateTelemetry = useCallback((data: any) => {
@@ -93,16 +93,16 @@ export const NativeMacSideNotch: React.FC = () => {
     const plan = ag.plan;
     const enableOverages = ag.enableOverages;
 
-    if (gemini5h !== undefined || credits !== undefined || plan !== undefined) {
+    if (gemini5h !== undefined || geminiWeekly !== undefined || credits !== undefined || plan !== undefined) {
       setAntigravityData(prev => ({
         ...prev,
-        geminiFiveHour: gemini5h ?? prev.geminiFiveHour,
+        geminiFiveHour: gemini5h !== undefined ? gemini5h : prev.geminiFiveHour,
         geminiFiveHourText: gemini5hText || prev.geminiFiveHourText,
-        geminiWeekly: geminiWeekly ?? prev.geminiWeekly,
+        geminiWeekly: geminiWeekly !== undefined ? geminiWeekly : prev.geminiWeekly,
         geminiWeeklyText: geminiWeeklyText || prev.geminiWeeklyText,
-        availableCredits: credits ?? prev.availableCredits,
+        availableCredits: credits !== undefined ? credits : prev.availableCredits,
         plan: plan || prev.plan,
-        enableOverages: enableOverages ?? prev.enableOverages,
+        enableOverages: enableOverages !== undefined ? enableOverages : prev.enableOverages,
       }));
     }
 
@@ -160,7 +160,7 @@ export const NativeMacSideNotch: React.FC = () => {
           }).catch(() => {});
         }
       } catch {}
-    }, 15000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [updateTelemetry]);
@@ -246,13 +246,13 @@ export const NativeMacSideNotch: React.FC = () => {
     },
     {
       id: 'antigravity' as const,
-      name: 'Kiro / Gemini Pro',
+      name: 'Gemini (Antigravity)',
       shortName: 'GEM',
-      percent: antigravityData.geminiFiveHour,
-      color: '#ff453a',
+      percent: antigravityData.geminiWeekly,
+      color: antigravityData.geminiWeekly <= 15 ? '#ff453a' : '#30d158',
       glowColor: 'rgba(255, 69, 58, 0.4)',
       isLinked: true,
-      badgeText: `${antigravityData.availableCredits} cr · 100%`,
+      badgeText: `${antigravityData.availableCredits} cr · ${antigravityData.geminiWeekly}%`,
     },
   ];
 
@@ -296,12 +296,12 @@ export const NativeMacSideNotch: React.FC = () => {
                   </svg>
                 )}
                 {activeModel === 'antigravity' && (
-                  <span className="font-bold font-sans text-sm tracking-tighter text-white">
-                    K<span className="text-[10px] align-super">˙</span>
-                  </span>
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white text-white">
+                    <path d="M12 1L14.7 9.3L23 12L14.7 14.7L12 23L9.3 14.7L1 12L9.3 9.3L12 1Z" />
+                  </svg>
                 )}
                 <h3 className="text-base font-bold text-white tracking-tight">
-                  {activeModel === 'claude' ? 'Claude Usage' : activeModel === 'openai' ? 'OpenAI Usage' : 'Kiro / Gemini Usage'}
+                  {activeModel === 'claude' ? 'Claude Usage' : activeModel === 'openai' ? 'OpenAI Usage' : 'Gemini Usage'}
                 </h3>
               </div>
 
@@ -310,7 +310,7 @@ export const NativeMacSideNotch: React.FC = () => {
               </span>
             </div>
 
-            {/* Capacity Breakdown Rows (Exact CodeBurn layout) */}
+            {/* Capacity Breakdown Rows (Exact CodeBurn layout with Live LanguageServer Quotas) */}
             <div className="space-y-3.5">
               {/* Row 1: 5-hour */}
               <div className="space-y-1">
@@ -322,10 +322,10 @@ export const NativeMacSideNotch: React.FC = () => {
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[#30d158] transition-all duration-500"
+                    className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: activeModel === 'claude' ? `${claudeData.fiveHourPercent}%` : activeModel === 'openai' ? `${openAIData.fiveHourPercent}%` : `${antigravityData.geminiFiveHour}%`,
-                      backgroundColor: activeModel === 'antigravity' ? '#ff453a' : '#30d158',
+                      backgroundColor: '#30d158',
                     }}
                   />
                 </div>
@@ -344,18 +344,33 @@ export const NativeMacSideNotch: React.FC = () => {
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[#30d158] transition-all duration-500"
+                    className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: activeModel === 'claude' ? `${claudeData.weeklyPercent}%` : activeModel === 'openai' ? `${openAIData.weeklyPercent}%` : `${antigravityData.geminiWeekly}%`,
+                      backgroundColor: activeModel === 'antigravity' && antigravityData.geminiWeekly <= 15 ? '#ff453a' : '#30d158',
                     }}
                   />
                 </div>
-                <div className="text-[10px] font-mono text-neutral-500 text-right">
+                <div className="text-[10px] font-mono text-neutral-500 text-right leading-tight">
                   {activeModel === 'claude' ? claudeData.weeklyResetText : activeModel === 'openai' ? openAIData.weeklyResetText : antigravityData.geminiWeeklyText}
                 </div>
               </div>
 
-              {/* Row 3: Weekly · Fable or Credits */}
+              {/* Row 3: Available AI Credits for Antigravity or Weekly Fable */}
+              {activeModel === 'antigravity' && (
+                <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-amber-400 fill-none stroke-current" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <span className="font-medium text-neutral-300">Available AI Credits:</span>
+                  </div>
+                  <span className="font-mono font-bold text-amber-300">{antigravityData.availableCredits.toLocaleString()} cr</span>
+                </div>
+              )}
+
               {activeModel === 'claude' && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
@@ -382,7 +397,7 @@ export const NativeMacSideNotch: React.FC = () => {
                   type="text"
                   value={quickPrompt}
                   onChange={e => setQuickPrompt(e.target.value)}
-                  placeholder={`Preguntar a ${activeModel}...`}
+                  placeholder={`Preguntar a ${activeModel === 'antigravity' ? 'Gemini' : activeModel}...`}
                   className="flex-1 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition-colors"
                 />
                 <button
