@@ -3,7 +3,6 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { exec } = require('child_process');
-const { getAntigravityRealUsage, fetchLiveAntigravityUsage } = require('./quotaReader.cjs');
 const {
   loadStoredCredentials,
   saveStoredCredentials,
@@ -921,23 +920,11 @@ function createWindow() {
     performNativeScreenCapture();
   });
 
-  // Watch Antigravity directory for live instant quota updates
-  try {
-    const antigravityDir = path.join(os.homedir(), '.gemini', 'antigravity-ide');
-    if (fs.existsSync(antigravityDir)) {
-      fs.watch(antigravityDir, { recursive: true }, async () => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          const quotas = await fetchAllRealQuotas();
-          mainWindow.webContents.send('quotas-updated', quotas);
-        }
-      });
-    }
-  } catch (err) {
-    console.error('Error setting up file watcher:', err);
-  }
-
-  // Periodic live check every 2.5 seconds
+  // Periodic live check every 2.5 seconds (skipped while the previous one is still running)
+  let quotaCheckRunning = false;
   const quotaInterval = setInterval(async () => {
+    if (quotaCheckRunning) return;
+    quotaCheckRunning = true;
     try {
       const quotas = await fetchAllRealAccountQuotas();
       if (mainWindow && !mainWindow.isDestroyed()) {
@@ -948,6 +935,8 @@ function createWindow() {
       }
     } catch (err) {
       console.error('Error in periodic quota check:', err);
+    } finally {
+      quotaCheckRunning = false;
     }
   }, 2500);
 

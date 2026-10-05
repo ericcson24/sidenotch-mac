@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const https = require('https');
-const { fetchLiveAntigravityUsage } = require('./quotaReader.cjs');
+const { fetchLiveAntigravityUsage, fetchClaudeSubscriptionUsage } = require('./quotaReader.cjs');
 
 const CREDENTIALS_DIR = path.join(os.homedir(), '.sidenotch');
 const CREDENTIALS_FILE = path.join(CREDENTIALS_DIR, 'credentials.json');
@@ -176,7 +176,7 @@ function validateAndFetchClaude(apiKey) {
     }
 
     const payload = JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1,
       messages: [{ role: 'user', content: 'ping' }],
     });
@@ -723,15 +723,37 @@ function diagnoseErrorTrace(errorTrace, workspace) {
 }
 
 // Main real quota aggregator: Queries ONLY real connected sources
+// API-key checks hit paid endpoints, so their result is reused for a few minutes
+// instead of being re-requested on every 2.5s poll.
+const API_KEY_CHECK_TTL_MS = 5 * 60 * 1000;
+const apiKeyCheckCache = new Map();
+
+function cachedApiKeyCheck(name, apiKey, check) {
+  const key = `${name}:${apiKey || ''}`;
+  const hit = apiKeyCheckCache.get(key);
+  if (hit && Date.now() - hit.at < API_KEY_CHECK_TTL_MS) return hit.promise;
+  const promise = check(apiKey);
+  apiKeyCheckCache.set(key, { at: Date.now(), promise });
+  return promise;
+}
+
+async function fetchClaudeUsage(apiKey) {
+  // The Claude Pro/Max subscription (read from the Claude Code login) has real
+  // 5h/weekly limits; an API key only exposes rate limits, so it is the fallback.
+  const subscription = await fetchClaudeSubscriptionUsage();
+  if (subscription.isLinked || !apiKey) return subscription;
+  return cachedApiKeyCheck('claude', apiKey, validateAndFetchClaude);
+}
+
 async function fetchAllRealAccountQuotas() {
   const creds = loadStoredCredentials();
 
   const [antigravity, claude, openai, openrouter, deepseek] = await Promise.all([
     fetchLiveAntigravityUsage(),
-    validateAndFetchClaude(creds.claudeApiKey),
-    validateAndFetchOpenAI(creds.openaiApiKey),
-    validateAndFetchOpenRouter(creds.openrouterApiKey),
-    validateAndFetchDeepSeek(creds.deepseekApiKey),
+    fetchClaudeUsage(creds.claudeApiKey),
+    cachedApiKeyCheck('openai', creds.openaiApiKey, validateAndFetchOpenAI),
+    cachedApiKeyCheck('openrouter', creds.openrouterApiKey, validateAndFetchOpenRouter),
+    cachedApiKeyCheck('deepseek', creds.deepseekApiKey, validateAndFetchDeepSeek),
   ]);
 
   return {

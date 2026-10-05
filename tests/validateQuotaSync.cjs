@@ -27,13 +27,12 @@ async function runContinuousTests(iterations = 5, delayMs = 1500) {
       result.isLinked === true &&
       typeof result.plan === 'string' &&
       result.plan.length > 0 &&
-      typeof result.availableCredits === 'number' &&
-      result.availableCredits > 0 &&
+      (result.availableCredits === null || typeof result.availableCredits === 'number') &&
       typeof result.geminiModels.fiveHourRemaining === 'number' &&
       result.geminiModels.fiveHourRemaining >= 0 &&
       result.geminiModels.fiveHourRemaining <= 100 &&
       typeof result.geminiModels.fiveHourRefreshText === 'string' &&
-      result.geminiModels.fiveHourRefreshText.includes('refresh')
+      result.geminiModels.fiveHourRefreshText.includes('recarga')
     );
 
     if (isValid) {

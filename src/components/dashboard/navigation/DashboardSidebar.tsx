@@ -6,7 +6,7 @@ interface DashboardSidebarProps {
   activeTab: DashboardTab;
   setActiveTab: (tab: DashboardTab) => void;
   geminiFiveHour: number;
-  credits: number;
+  credits: number | null;
 }
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
@@ -124,7 +124,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           />
         </div>
         <div className="text-[10.5px] text-neutral-400 flex items-center justify-between font-mono">
-          <span>{credits.toLocaleString()} cr</span>
+          <span>{credits !== null ? `${credits.toLocaleString()} cr` : '—'}</span>
           <span className="text-emerald-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             Listo

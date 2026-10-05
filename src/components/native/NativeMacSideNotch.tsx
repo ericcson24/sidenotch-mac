@@ -14,8 +14,6 @@ interface ClaudeData {
   fiveHourResetText: string;
   weeklyPercent: number;
   weeklyResetText: string;
-  weeklyFablePercent: number;
-  weeklyFableResetText: string;
 }
 
 interface OpenAIData {
@@ -31,7 +29,7 @@ interface OpenAIData {
 interface AntigravityData {
   isLinked: boolean;
   plan: string;
-  availableCredits: number;
+  availableCredits: number | null;
   enableOverages: boolean;
   geminiFiveHour: number;
   geminiFiveHourText: string;
@@ -47,92 +45,79 @@ export const NativeMacSideNotch: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // All percentages are "remaining" (100 = full), matching what electron/quotaReader.cjs sends.
   const [claudeData, setClaudeData] = useState<ClaudeData>({
-    isLinked: true,
-    percent: 15,
-    maxBadge: 'Max 20x',
-    fiveHourPercent: 7,
-    fiveHourResetText: 'Resets in 3h 1m',
-    weeklyPercent: 15,
-    weeklyResetText: 'Resets in 5d 22h',
-    weeklyFablePercent: 13,
-    weeklyFableResetText: 'Resets in 5d 22h',
+    isLinked: false,
+    percent: 0,
+    maxBadge: 'Sin Vincular',
+    fiveHourPercent: 0,
+    fiveHourResetText: 'Cargando…',
+    weeklyPercent: 0,
+    weeklyResetText: 'Cargando…',
   });
 
   const [openAIData, setOpenAIData] = useState<OpenAIData>({
-    isLinked: true,
+    isLinked: false,
     percent: 0,
-    maxBadge: 'Tier 1',
+    maxBadge: 'Sin Vincular',
     fiveHourPercent: 0,
-    fiveHourResetText: 'Resets in 5h 0m',
+    fiveHourResetText: 'No vinculado',
     weeklyPercent: 0,
-    weeklyResetText: 'Resets in 7d 0h',
+    weeklyResetText: 'No vinculado',
   });
 
   const [antigravityData, setAntigravityData] = useState<AntigravityData>({
-    isLinked: true,
-    plan: 'Google AI Pro',
-    availableCredits: 1896,
-    enableOverages: true,
-    geminiFiveHour: 100,
-    geminiFiveHourText: 'it will fully refresh in 2 hours, 59 minutes.',
-    geminiWeekly: 1,
-    geminiWeeklyText: 'You have used some of your weekly limit, it will fully refresh in 2 days, 20 hours.',
+    isLinked: false,
+    plan: 'Antigravity',
+    availableCredits: null,
+    enableOverages: false,
+    geminiFiveHour: 0,
+    geminiFiveHourText: 'Cargando…',
+    geminiWeekly: 0,
+    geminiWeeklyText: 'Cargando…',
   });
 
   const updateTelemetry = useCallback((data: any) => {
     if (!data) return;
 
-    // Handle Antigravity / Gemini live telemetry
-    const ag = data.antigravity || data;
-    const gemini5h = ag.geminiFiveHour ?? ag.geminiModels?.fiveHourRemaining;
-    const gemini5hText = ag.geminiFiveHourText || ag.geminiModels?.fiveHourRefreshText;
-    const geminiWeekly = ag.geminiWeekly ?? ag.geminiModels?.weeklyRemaining;
-    const geminiWeeklyText = ag.geminiWeeklyText || ag.geminiModels?.weeklyRefreshText;
-    const credits = ag.credits ?? ag.availableCredits;
-    const plan = ag.plan;
-    const enableOverages = ag.enableOverages;
-
-    if (gemini5h !== undefined || geminiWeekly !== undefined || credits !== undefined || plan !== undefined) {
-      setAntigravityData(prev => ({
-        ...prev,
-        geminiFiveHour: gemini5h !== undefined ? gemini5h : prev.geminiFiveHour,
-        geminiFiveHourText: gemini5hText || prev.geminiFiveHourText,
-        geminiWeekly: geminiWeekly !== undefined ? geminiWeekly : prev.geminiWeekly,
-        geminiWeeklyText: geminiWeeklyText || prev.geminiWeeklyText,
-        availableCredits: credits !== undefined ? credits : prev.availableCredits,
-        plan: plan || prev.plan,
-        enableOverages: enableOverages !== undefined ? enableOverages : prev.enableOverages,
-      }));
+    const ag = data.antigravity;
+    if (ag) {
+      setAntigravityData({
+        isLinked: ag.isLinked,
+        plan: ag.plan,
+        availableCredits: ag.availableCredits ?? null,
+        enableOverages: ag.enableOverages,
+        geminiFiveHour: ag.geminiModels?.fiveHourRemaining ?? 0,
+        geminiFiveHourText: ag.geminiModels?.fiveHourRefreshText ?? '',
+        geminiWeekly: ag.geminiModels?.weeklyRemaining ?? 0,
+        geminiWeeklyText: ag.geminiModels?.weeklyRefreshText ?? '',
+      });
     }
 
-    // Handle Claude
-    const cld = data.claude || data;
-    const cld5h = cld.claudeFiveHour ?? cld.fiveHourPercent ?? cld.percent;
-    const cldWeekly = cld.claudeWeekly ?? cld.weeklyPercent;
-    const cldLinked = cld.claudeLinked ?? cld.isLinked;
-
-    if (cld5h !== undefined || cldLinked !== undefined) {
-      setClaudeData(prev => ({
-        ...prev,
-        percent: cld5h ?? prev.percent,
-        fiveHourPercent: cld5h ?? prev.fiveHourPercent,
-        weeklyPercent: cldWeekly ?? prev.weeklyPercent,
-        isLinked: cldLinked ?? prev.isLinked,
-      }));
+    const cld = data.claude;
+    if (cld) {
+      setClaudeData({
+        isLinked: cld.isLinked,
+        percent: cld.percent ?? 0,
+        maxBadge: cld.maxBadge ?? 'Sin Vincular',
+        fiveHourPercent: cld.fiveHourPercent ?? cld.percent ?? 0,
+        fiveHourResetText: cld.fiveHourResetText ?? cld.error ?? '',
+        weeklyPercent: cld.weeklyPercent ?? cld.percent ?? 0,
+        weeklyResetText: cld.weeklyResetText ?? cld.error ?? '',
+      });
     }
 
-    // Handle OpenAI
-    const gpt = data.openai || data;
-    const gpt5h = gpt.gptFiveHour ?? gpt.fiveHourPercent ?? gpt.percent;
-    const gptLinked = gpt.openaiLinked ?? gpt.isLinked;
-
-    if (gpt5h !== undefined || gptLinked !== undefined) {
+    const gpt = data.openai;
+    if (gpt) {
       setOpenAIData(prev => ({
         ...prev,
-        percent: gpt5h ?? prev.percent,
-        fiveHourPercent: gpt5h ?? prev.fiveHourPercent,
-        isLinked: gptLinked ?? prev.isLinked,
+        isLinked: gpt.isLinked,
+        percent: gpt.percent ?? 0,
+        maxBadge: gpt.maxBadge ?? prev.maxBadge,
+        fiveHourPercent: gpt.percent ?? 0,
+        weeklyPercent: gpt.percent ?? 0,
+        fiveHourResetText: gpt.isLinked ? 'Límite de la API' : (gpt.error ?? 'No vinculado'),
+        weeklyResetText: gpt.isLinked ? 'Límite de la API' : (gpt.error ?? 'No vinculado'),
       }));
     }
   }, []);
@@ -226,13 +211,13 @@ export const NativeMacSideNotch: React.FC = () => {
   const bubbleModels = [
     {
       id: 'claude' as const,
-      name: 'Claude 3.7 Sonnet',
+      name: claudeData.maxBadge,
       shortName: 'CLD',
       percent: claudeData.percent,
-      color: '#30d158',
+      color: claudeData.percent <= 15 ? '#ff453a' : '#30d158',
       glowColor: 'rgba(48, 209, 88, 0.4)',
       isLinked: claudeData.isLinked,
-      badgeText: '5h: 7% · W: 15%',
+      badgeText: claudeData.isLinked ? `5h: ${claudeData.fiveHourPercent}% · W: ${claudeData.weeklyPercent}%` : 'Sin vincular',
     },
     {
       id: 'openai' as const,
@@ -242,17 +227,17 @@ export const NativeMacSideNotch: React.FC = () => {
       color: '#10a37f',
       glowColor: 'rgba(16, 163, 127, 0.4)',
       isLinked: openAIData.isLinked,
-      badgeText: '0% usado',
+      badgeText: openAIData.isLinked ? `${openAIData.percent}% restante` : 'Sin vincular',
     },
     {
       id: 'antigravity' as const,
       name: 'Gemini (Antigravity)',
       shortName: 'GEM',
-      percent: antigravityData.geminiWeekly,
-      color: antigravityData.geminiWeekly <= 15 ? '#ff453a' : '#30d158',
+      percent: Math.min(antigravityData.geminiFiveHour, antigravityData.geminiWeekly),
+      color: Math.min(antigravityData.geminiFiveHour, antigravityData.geminiWeekly) <= 15 ? '#ff453a' : '#30d158',
       glowColor: 'rgba(255, 69, 58, 0.4)',
-      isLinked: true,
-      badgeText: `${antigravityData.availableCredits} cr · ${antigravityData.geminiWeekly}%`,
+      isLinked: antigravityData.isLinked,
+      badgeText: antigravityData.isLinked ? `5h: ${antigravityData.geminiFiveHour}% · W: ${antigravityData.geminiWeekly}%` : 'Sin detectar',
     },
   ];
 
@@ -295,7 +280,7 @@ export const NativeMacSideNotch: React.FC = () => {
                     <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073z" />
                   </svg>
                 )}
-                {activeModel === 'antigravity' && (
+                {activeModel === 'antigravity' && antigravityData.availableCredits !== null && (
                   <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white text-white">
                     <path d="M12 1L14.7 9.3L23 12L14.7 14.7L12 23L9.3 14.7L1 12L9.3 9.3L12 1Z" />
                   </svg>
@@ -315,7 +300,7 @@ export const NativeMacSideNotch: React.FC = () => {
               {/* Row 1: 5-hour */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-neutral-200">5-hour</span>
+                  <span className="font-medium text-neutral-200">5 horas · restante</span>
                   <span className="font-mono font-bold text-white">
                     {activeModel === 'claude' ? `${claudeData.fiveHourPercent}%` : activeModel === 'openai' ? `${openAIData.fiveHourPercent}%` : `${antigravityData.geminiFiveHour}%`}
                   </span>
@@ -325,7 +310,7 @@ export const NativeMacSideNotch: React.FC = () => {
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: activeModel === 'claude' ? `${claudeData.fiveHourPercent}%` : activeModel === 'openai' ? `${openAIData.fiveHourPercent}%` : `${antigravityData.geminiFiveHour}%`,
-                      backgroundColor: '#30d158',
+                      backgroundColor: (activeModel === 'claude' ? claudeData.fiveHourPercent : activeModel === 'openai' ? openAIData.fiveHourPercent : antigravityData.geminiFiveHour) <= 15 ? '#ff453a' : '#30d158',
                     }}
                   />
                 </div>
@@ -337,7 +322,7 @@ export const NativeMacSideNotch: React.FC = () => {
               {/* Row 2: Weekly */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-neutral-200">Weekly</span>
+                  <span className="font-medium text-neutral-200">Semanal · restante</span>
                   <span className="font-mono font-bold text-white">
                     {activeModel === 'claude' ? `${claudeData.weeklyPercent}%` : activeModel === 'openai' ? `${openAIData.weeklyPercent}%` : `${antigravityData.geminiWeekly}%`}
                   </span>
@@ -347,7 +332,7 @@ export const NativeMacSideNotch: React.FC = () => {
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: activeModel === 'claude' ? `${claudeData.weeklyPercent}%` : activeModel === 'openai' ? `${openAIData.weeklyPercent}%` : `${antigravityData.geminiWeekly}%`,
-                      backgroundColor: activeModel === 'antigravity' && antigravityData.geminiWeekly <= 15 ? '#ff453a' : '#30d158',
+                      backgroundColor: (activeModel === 'claude' ? claudeData.weeklyPercent : activeModel === 'openai' ? openAIData.weeklyPercent : antigravityData.geminiWeekly) <= 15 ? '#ff453a' : '#30d158',
                     }}
                   />
                 </div>
@@ -367,27 +352,10 @@ export const NativeMacSideNotch: React.FC = () => {
                     </svg>
                     <span className="font-medium text-neutral-300">Available AI Credits:</span>
                   </div>
-                  <span className="font-mono font-bold text-amber-300">{antigravityData.availableCredits.toLocaleString()} cr</span>
+                  <span className="font-mono font-bold text-amber-300">{antigravityData.availableCredits?.toLocaleString()} cr</span>
                 </div>
               )}
 
-              {activeModel === 'claude' && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-neutral-200">Weekly · Fable</span>
-                    <span className="font-mono font-bold text-white">{claudeData.weeklyFablePercent}%</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-[#30d158] transition-all duration-500"
-                      style={{ width: `${claudeData.weeklyFablePercent}%` }}
-                    />
-                  </div>
-                  <div className="text-[10px] font-mono text-neutral-500 text-right">
-                    {claudeData.weeklyFableResetText}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Direct Prompt Input (Minimal) */}

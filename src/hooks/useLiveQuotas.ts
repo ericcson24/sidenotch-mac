@@ -3,16 +3,22 @@ import type { RealQuotasState } from '../types/dashboard';
 
 export const useLiveQuotas = () => {
   const [realQuotas, setRealQuotas] = useState<RealQuotasState>({
-    geminiFiveHour: 99,
-    geminiFiveHourText: 'Recarga en 4 horas, 59 minutos.',
-    geminiWeekly: 17,
-    geminiWeeklyText: 'Recarga en 3 dias, 12 horas.',
-    credits: 2016,
-    plan: 'Google AI Pro',
-    enableOverages: true,
-    claudeFiveHour: 100,
-    claudeWeekly: 100,
-    gptFiveHour: 100,
+    geminiFiveHour: 0,
+    geminiFiveHourText: 'Cargando…',
+    geminiWeekly: 0,
+    geminiWeeklyText: 'Cargando…',
+    credits: null,
+    plan: 'Antigravity',
+    enableOverages: false,
+    antigravityLinked: false,
+    agThirdPartyFiveHour: 0,
+    agThirdPartyWeekly: 0,
+    claudeFiveHour: 0,
+    claudeFiveHourText: 'Cargando…',
+    claudeWeekly: 0,
+    claudeWeeklyText: 'Cargando…',
+    claudePlan: 'Claude',
+    gptFiveHour: 0,
     claudeLinked: false,
     openaiLinked: false,
     deepseekLinked: false,
@@ -30,37 +36,55 @@ export const useLiveQuotas = () => {
     antigravity?: {
       isLinked: boolean;
       plan: string;
-      availableCredits: number;
+      availableCredits: number | null;
       enableOverages: boolean;
       geminiModels: { fiveHourRemaining: number; weeklyRemaining: number; fiveHourRefreshText: string; weeklyRefreshText: string };
       claudeGptModels: { fiveHourRemaining: number; weeklyRemaining: number };
     };
-    claude?: { isLinked: boolean; percent: number; maxBadge: string; error?: string };
+    claude?: {
+      isLinked: boolean;
+      percent: number;
+      maxBadge: string;
+      error?: string;
+      fiveHourPercent?: number;
+      fiveHourResetText?: string;
+      weeklyPercent?: number;
+      weeklyResetText?: string;
+    };
     openai?: { isLinked: boolean; percent: number; maxBadge: string; error?: string };
     deepseek?: { isLinked: boolean; balance?: string; error?: string };
     openrouter?: { isLinked: boolean; credits?: number; error?: string };
   }) => {
     if (!data) return;
 
-    if (data.antigravity) {
-      setRealQuotas(prev => ({
-        ...prev,
-        geminiFiveHour: data.antigravity?.geminiModels?.fiveHourRemaining ?? prev.geminiFiveHour,
-        geminiFiveHourText: data.antigravity?.geminiModels?.fiveHourRefreshText || prev.geminiFiveHourText,
-        geminiWeekly: data.antigravity?.geminiModels?.weeklyRemaining ?? prev.geminiWeekly,
-        geminiWeeklyText: data.antigravity?.geminiModels?.weeklyRefreshText || prev.geminiWeeklyText,
-        credits: data.antigravity?.availableCredits ?? prev.credits,
-        plan: data.antigravity?.plan || prev.plan,
-        enableOverages: data.antigravity?.enableOverages ?? prev.enableOverages,
-        claudeFiveHour: data.claude?.percent ?? (data.antigravity?.claudeGptModels?.fiveHourRemaining ?? 100),
-        claudeWeekly: data.antigravity?.claudeGptModels?.weeklyRemaining ?? 100,
-        gptFiveHour: data.openai?.percent ?? 100,
-        claudeLinked: data.claude?.isLinked ?? false,
-        openaiLinked: data.openai?.isLinked ?? false,
-        deepseekLinked: data.deepseek?.isLinked ?? false,
-        openrouterLinked: data.openrouter?.isLinked ?? false,
-      }));
-    }
+    const { antigravity, claude } = data;
+    setRealQuotas(prev => ({
+      ...prev,
+      ...(antigravity && {
+        geminiFiveHour: antigravity.geminiModels?.fiveHourRemaining ?? prev.geminiFiveHour,
+        geminiFiveHourText: antigravity.geminiModels?.fiveHourRefreshText ?? prev.geminiFiveHourText,
+        geminiWeekly: antigravity.geminiModels?.weeklyRemaining ?? prev.geminiWeekly,
+        geminiWeeklyText: antigravity.geminiModels?.weeklyRefreshText ?? prev.geminiWeeklyText,
+        credits: antigravity.availableCredits ?? null,
+        plan: antigravity.plan || prev.plan,
+        enableOverages: antigravity.enableOverages ?? prev.enableOverages,
+        antigravityLinked: antigravity.isLinked,
+        agThirdPartyFiveHour: antigravity.claudeGptModels?.fiveHourRemaining ?? prev.agThirdPartyFiveHour,
+        agThirdPartyWeekly: antigravity.claudeGptModels?.weeklyRemaining ?? prev.agThirdPartyWeekly,
+      }),
+      ...(claude && {
+        claudeFiveHour: claude.fiveHourPercent ?? claude.percent ?? 0,
+        claudeFiveHourText: claude.fiveHourResetText ?? claude.error ?? '',
+        claudeWeekly: claude.weeklyPercent ?? claude.percent ?? 0,
+        claudeWeeklyText: claude.weeklyResetText ?? claude.error ?? '',
+        claudePlan: claude.maxBadge,
+      }),
+      gptFiveHour: data.openai?.percent ?? 0,
+      claudeLinked: claude?.isLinked ?? false,
+      openaiLinked: data.openai?.isLinked ?? false,
+      deepseekLinked: data.deepseek?.isLinked ?? false,
+      openrouterLinked: data.openrouter?.isLinked ?? false,
+    }));
 
     setProviderStatuses({
       claude: data.claude,

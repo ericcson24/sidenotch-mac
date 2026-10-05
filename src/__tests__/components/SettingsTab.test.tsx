@@ -22,8 +22,14 @@ describe('SettingsTab React Component', () => {
     credits: 2016,
     plan: 'Pro Plan',
     enableOverages: false,
+    antigravityLinked: true,
+    agThirdPartyFiveHour: 100,
+    agThirdPartyWeekly: 100,
     claudeFiveHour: 60,
+    claudeFiveHourText: 'Se recarga en 2 h 0 min',
     claudeWeekly: 70,
+    claudeWeeklyText: 'Se recarga en 3 d 4 h',
+    claudePlan: 'Claude Pro',
     gptFiveHour: 75,
     claudeLinked: true,
     openaiLinked: true,
@@ -45,7 +51,7 @@ describe('SettingsTab React Component', () => {
 
     expect(screen.getByText('Ajustes & Cuotas')).toBeDefined();
     expect(screen.getByText('Gemini 3.7')).toBeDefined();
-    expect(screen.getByText('Claude 3.7')).toBeDefined();
+    expect(screen.getByText('Claude')).toBeDefined();
     expect(screen.getByText('GPT-4o')).toBeDefined();
   });
 

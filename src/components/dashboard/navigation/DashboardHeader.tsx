@@ -4,7 +4,7 @@ import type { WorkspaceContextData } from '../../../types/dashboard';
 interface DashboardHeaderProps {
   currentWorkspace: string;
   workspaceContext: WorkspaceContextData | null;
-  credits: number;
+  credits: number | null;
   showMobileSimulator: boolean;
   isMetroRunning: boolean;
   onSelectWorkspace: () => void;
@@ -70,9 +70,11 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         </button>
 
         {/* Credits Pill */}
-        <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400 font-mono">
-          {credits.toLocaleString()} créditos
-        </div>
+        {credits !== null && (
+          <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400 font-mono">
+            {credits.toLocaleString()} créditos
+          </div>
+        )}
       </div>
     </header>
   );

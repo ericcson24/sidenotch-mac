@@ -52,7 +52,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <div className="p-3 rounded-xl bg-black/40 border border-white/[0.06] flex items-center justify-between">
               <div>
                 <div className="text-xs font-semibold text-white">Gemini 3.7</div>
-                <div className="text-[10px] text-neutral-400">Google AI Pro</div>
+                <div className="text-[10px] text-neutral-400">{realQuotas.plan}</div>
               </div>
               <MetricRing percent={realQuotas.geminiFiveHour} color="#30d158" size={32} />
             </div>
@@ -60,8 +60,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             {/* Claude */}
             <div className="p-3 rounded-xl bg-black/40 border border-white/[0.06] flex items-center justify-between">
               <div>
-                <div className="text-xs font-semibold text-white">Claude 3.7</div>
-                <div className="text-[10px] text-neutral-400">Anthropic</div>
+                <div className="text-xs font-semibold text-white">Claude</div>
+                <div className="text-[10px] text-neutral-400">{realQuotas.claudeLinked ? realQuotas.claudePlan : 'Sin vincular'}</div>
               </div>
               <MetricRing percent={realQuotas.claudeFiveHour} color="#FF6B4A" size={32} />
             </div>

@@ -112,11 +112,19 @@ export interface RealQuotasState {
   geminiFiveHourText: string;
   geminiWeekly: number;
   geminiWeeklyText: string;
-  credits: number;
+  credits: number | null;
   plan: string;
   enableOverages: boolean;
+  antigravityLinked: boolean;
+  // Antigravity's shared "Claude and GPT models" quota
+  agThirdPartyFiveHour: number;
+  agThirdPartyWeekly: number;
+  // Claude Pro/Max subscription (or API key fallback)
   claudeFiveHour: number;
+  claudeFiveHourText: string;
   claudeWeekly: number;
+  claudeWeeklyText: string;
+  claudePlan: string;
   gptFiveHour: number;
   claudeLinked: boolean;
   openaiLinked: boolean;
