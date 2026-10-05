@@ -3,6 +3,7 @@ const path = require('path');
 const os = require('os');
 const https = require('https');
 const { fetchLiveAntigravityUsage, fetchClaudeSubscriptionUsage } = require('./quotaReader.cjs');
+const { runClaudeSubscription, runGeminiSubscription } = require('./subscriptionRunner.cjs');
 
 const CREDENTIALS_DIR = path.join(os.homedir(), '.sidenotch');
 const CREDENTIALS_FILE = path.join(CREDENTIALS_DIR, 'credentials.json');
@@ -394,7 +395,7 @@ function validateAndFetchDeepSeek(apiKey) {
 }
 
 // REAL LLM PROMPT EXECUTION (Anthropic, OpenAI, DeepSeek, OpenRouter)
-function executeRealClaudePrompt(apiKey, prompt, systemPrompt = '', model = 'claude-3-5-sonnet-20241022') {
+function executeRealClaudePrompt(apiKey, prompt, systemPrompt = '', model = 'claude-sonnet-5-5') {
   return new Promise((resolve) => {
     if (!apiKey || !apiKey.trim().startsWith('sk-ant-')) {
       resolve({ success: false, error: 'API Key de Anthropic no configurada en SideNotch' });
@@ -559,9 +560,31 @@ Instrucción procesada sobre **${ctx.folderName}** (\`${ctx.path}\`):
 *Nota: Para peticiones complejas con generación de código externa, vincula tu API Key en la sección de Vinculación.*`;
 }
 
+// Routes a prompt to the user's subscriptions first (Claude Code / Gemini CLI),
+// and only to pay-per-use API keys for providers without a subscription.
+async function executeModelPrompt(modelName, prompt, systemPrompt, workspace) {
+  const m = (modelName || '').toLowerCase();
+  const creds = loadStoredCredentials();
+
+  if (m.includes('claude')) {
+    const res = await runClaudeSubscription({ prompt, systemPrompt, workspace, model: modelName });
+    if (!res.success && creds.claudeApiKey) {
+      return executeRealClaudePrompt(creds.claudeApiKey, prompt, systemPrompt, 'claude-sonnet-5-5');
+    }
+    return res;
+  }
+  if (m.includes('gemini') || m.includes('antigravity')) {
+    return runGeminiSubscription({ prompt, systemPrompt, workspace });
+  }
+  if (m.includes('gpt') || m.includes('openai') || m.includes('o3')) {
+    if (creds.openaiApiKey) return executeRealOpenAIPrompt(creds.openaiApiKey, prompt, systemPrompt);
+    return { success: false, error: 'OpenAI no está vinculado (no hay suscripción conectada ni API key).' };
+  }
+  return { success: false, error: `${modelName} no está vinculado.` };
+}
+
 // REAL MULTI-AGENT SWARM DISPATCHER
 async function dispatchMultiAgentWorkflow(agents, prompt, workspace) {
-  const creds = loadStoredCredentials();
   const stepLogs = [];
   const ctx = scanWorkspaceContext(workspace);
 
@@ -573,43 +596,28 @@ async function dispatchMultiAgentWorkflow(agents, prompt, workspace) {
     const stepName = `[Paso ${i + 1}/${agents.length}] ${agent.name} (${agent.model})`;
     stepLogs.push(`Iniciando ${stepName}...`);
 
-    let executionResult = null;
     const systemPrompt = buildDeveloperSystemPrompt(agent, workspace);
+    const executionResult = await executeModelPrompt(
+      agent.model,
+      `${contextAccumulator}\n\nRol asignado: ${agent.role}. Ejecuta tu fase de la tarea: ${prompt}`,
+      systemPrompt,
+      workspace
+    );
 
-    if (agent.model.toLowerCase().includes('claude') && creds.claudeApiKey) {
-      executionResult = await executeRealClaudePrompt(
-        creds.claudeApiKey,
-        `${contextAccumulator}\n\nRol asignado: ${agent.role}. Ejecuta tu fase de la tarea: ${prompt}`,
-        systemPrompt
-      );
-    } else if (agent.model.toLowerCase().includes('gpt') && creds.openaiApiKey) {
-      executionResult = await executeRealOpenAIPrompt(
-        creds.openaiApiKey,
-        `${contextAccumulator}\n\nRol asignado: ${agent.role}. Ejecuta tu fase de la tarea: ${prompt}`,
-        systemPrompt
-      );
+    const output = executionResult.success ? executionResult.text : `⚠️ ${executionResult.error || 'Sin respuesta'}`;
+    if (executionResult.success) {
+      stepLogs.push(`[OK] Completado por ${agent.name}: ${output.slice(0, 60)}...`);
     } else {
-      // Local Intelligent Agent Execution with full workspace context
-      const dynamicText = generateIntelligentLocalResponse(agent, prompt, workspace, contextAccumulator);
-      executionResult = {
-        success: true,
-        text: dynamicText,
-        model: agent.model,
-      };
+      stepLogs.push(`[Error] Fallo en ${agent.name}: ${executionResult.error || 'Sin respuesta'}`);
     }
-
-    if (executionResult && executionResult.success) {
-      stepLogs.push(`[OK] Completado por ${agent.name}: ${executionResult.text.slice(0, 60)}...`);
-      contextAccumulator += `\n--- Salida de ${agent.name} (${agent.role}) ---\n${executionResult.text}\n`;
-      results.push({
-        agentId: agent.id,
-        agentName: agent.name,
-        role: agent.role,
-        output: executionResult.text,
-      });
-    } else {
-      stepLogs.push(`[Error] Fallo en ${agent.name}: ${executionResult?.error || 'Sin respuesta'}`);
-    }
+    contextAccumulator += `\n--- Salida de ${agent.name} (${agent.role}) ---\n${output}\n`;
+    results.push({
+      agentId: agent.id,
+      agentName: agent.name,
+      role: agent.role,
+      output,
+      success: executionResult.success,
+    });
   }
 
   return {
@@ -622,59 +630,29 @@ async function dispatchMultiAgentWorkflow(agents, prompt, workspace) {
 
 // Parallel AI Arena Execution (Runs same prompt across multiple models simultaneously)
 async function executeArenaPrompt(prompt, workspace) {
-  const creds = loadStoredCredentials();
   const ctx = scanWorkspaceContext(workspace);
   const startTime = Date.now();
 
   const arenaModels = [
-    { id: 'gemini-3.7', name: 'Gemini 3.7 Pro', provider: 'Antigravity Local Engine', color: '#D4FF00' },
-    { id: 'claude-3.7', name: 'Claude 3.7 Sonnet', provider: 'Anthropic', color: '#FF6B4A' },
-    { id: 'gpt-4o', name: 'OpenAI GPT-4o', provider: 'OpenAI', color: '#10A37F' },
-    { id: 'deepseek-v3', name: 'DeepSeek V3 Reasoner', provider: 'DeepSeek', color: '#4D6BFE' },
+    { id: 'gemini-3.7', name: 'Gemini', model: 'gemini', provider: 'Google AI Pro (Gemini CLI)', color: '#D4FF00' },
+    { id: 'claude-3.7', name: 'Claude Sonnet', model: 'claude-sonnet', provider: 'Claude Pro (Claude Code)', color: '#FF6B4A' },
+    { id: 'gpt-4o', name: 'OpenAI GPT-4o', model: 'gpt-4o', provider: 'OpenAI', color: '#10A37F' },
+    { id: 'deepseek-v3', name: 'DeepSeek V3', model: 'deepseek', provider: 'DeepSeek', color: '#4D6BFE' },
   ];
 
   const tasks = arenaModels.map(async (m) => {
     const t0 = Date.now();
-    let text = '';
-    let isRealAPI = false;
-
-    if (m.id === 'claude-3.7' && creds.claudeApiKey) {
-      const res = await executeRealClaudePrompt(creds.claudeApiKey, prompt, `Eres Claude 3.7 trabajando en ${ctx.folderName}`);
-      if (res.success) {
-        text = res.text;
-        isRealAPI = true;
-      }
-    } else if (m.id === 'gpt-4o' && creds.openaiApiKey) {
-      const res = await executeRealOpenAIPrompt(creds.openaiApiKey, prompt, `Eres GPT-4o trabajando en ${ctx.folderName}`);
-      if (res.success) {
-        text = res.text;
-        isRealAPI = true;
-      }
-    }
-
-    if (!text) {
-      // Local intelligent engine response tailored for each model's persona
-      if (m.id === 'gemini-3.7') {
-        text = `### [Gemini 3.7 Pro · Enfoque Arquitectónico]\nPara "${prompt}" en ${ctx.folderName} (${ctx.techStack}):\n\n1. **Diseño Modular**: Separar la capa de lógica del renderizado.\n2. **Contexto .agents**: Utilizar las ${ctx.agentsCustomizations.rules.length} reglas activas del workspace.\n3. **Rendimiento**: Implementar memoización y control de ciclo de vida.`;
-      } else if (m.id === 'claude-3.7') {
-        text = `### [Claude 3.7 Sonnet · Implementación TypeScript/React]\n\`\`\`typescript\n// Solución para: ${prompt}\nexport const useFeatureLogic = () => {\n  const [state, setState] = useState(null);\n  // Lógica optimizada y tipada\n  return { state };\n};\n\`\`\`\nCódigo conciso y compatible con el stack ${ctx.techStack}.`;
-      } else if (m.id === 'gpt-4o') {
-        text = `### [GPT-4o · Enfoque QA & Robustez]\nAnalizando requerimientos para "${prompt}":\n- Validar inputs y casos extremos (edge cases).\n- Incluir tests unitarios con Jest/Vitest.\n- Control de excepciones asíncronas.`;
-      } else {
-        text = `### [DeepSeek V3 · Auditoría & Optimización]\nRevisión algorítmica para "${prompt}":\n- Complejidad temporal O(n).\n- Evitar mutaciones directas de estado.\n- Reducción de overhead de memoria en el runtime.`;
-      }
-    }
-
-    const latency = Date.now() - t0;
+    const res = await executeModelPrompt(m.model, prompt, `Trabajas en el proyecto ${ctx.folderName} (${ctx.techStack}).`, workspace);
+    const text = res.success ? res.text : `⚠️ ${res.error}`;
     return {
       modelId: m.id,
       modelName: m.name,
       provider: m.provider,
       color: m.color,
-      isRealAPI,
-      latencyMs: latency,
+      isRealAPI: res.success,
+      latencyMs: Date.now() - t0,
       text,
-      tokenEstimate: Math.round(text.length / 3.8),
+      tokenEstimate: Math.max(1, Math.round(text.length / 3.8)),
     };
   });
 
@@ -719,6 +697,33 @@ function diagnoseErrorTrace(errorTrace, workspace) {
     summary: `Error detectado en ${affectedFile} (Línea ${lineNumber})`,
     explanation: `El traceback indica un problema de ejecución o incompatibilidad de tipos en el stack ${ctx.techStack}.`,
     recommendedFix: `1. Inspeccionar las importaciones en \`${affectedFile}\`.\n2. Asegurar que las dependencias requeridas estén instaladas en \`package.json\`.\n3. Ejecutar 'npx tsc --noEmit' desde la Consola para verificar los tipos.`,
+  };
+}
+
+async function optimizePromptWithAI(rawPrompt, techStack) {
+  const res = await executeModelPrompt(
+    'claude-sonnet',
+    `Reescribe este prompt para un asistente de programación de forma clara, específica y accionable. Stack: ${techStack || 'React + TypeScript'}. Devuelve SOLO el prompt mejorado, sin explicaciones.\n\nPrompt original:\n${rawPrompt}`,
+    '',
+    ''
+  );
+  return res.success ? res.text.trim() : optimizePromptStudio(rawPrompt, techStack);
+}
+
+async function diagnoseErrorWithAI(errorTrace, workspace) {
+  const base = diagnoseErrorTrace(errorTrace, workspace);
+  const res = await executeModelPrompt(
+    'claude-sonnet',
+    `Analiza este error. Responde en español con dos secciones separadas por una línea que contenga solo "---": primero la causa probable (breve), después los pasos concretos para solucionarlo.\n\n${errorTrace}`,
+    '',
+    workspace
+  );
+  if (!res.success) return base;
+  const [explanation, fix] = res.text.split(/\n-{3,}\n/);
+  return {
+    ...base,
+    explanation: explanation.trim(),
+    recommendedFix: (fix || explanation).trim(),
   };
 }
 
@@ -817,6 +822,9 @@ module.exports = {
   executeRealClaudePrompt,
   executeRealOpenAIPrompt,
   dispatchMultiAgentWorkflow,
+  executeModelPrompt,
+  optimizePromptWithAI,
+  diagnoseErrorWithAI,
   generateIntelligentLocalResponse,
   scanWorkspaceContext,
   buildDeveloperSystemPrompt,

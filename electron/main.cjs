@@ -1,8 +1,8 @@
-const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, Tray, nativeImage, dialog } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, Tray, nativeImage, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
 const {
   loadStoredCredentials,
   saveStoredCredentials,
@@ -14,12 +14,12 @@ const {
   executeRealClaudePrompt,
   executeRealOpenAIPrompt,
   dispatchMultiAgentWorkflow,
-  generateIntelligentLocalResponse,
+  executeModelPrompt,
+  optimizePromptWithAI,
+  diagnoseErrorWithAI,
   scanWorkspaceContext,
   buildDeveloperSystemPrompt,
   executeArenaPrompt,
-  optimizePromptStudio,
-  diagnoseErrorTrace,
   analyzePromptComplexity,
 } = require('./accountProviders.cjs');
 
@@ -131,19 +131,8 @@ ipcMain.handle('dispatch-multiagent-task', async (event, { agents, prompt, works
 });
 
 ipcMain.handle('execute-single-agent', async (event, { agent, prompt, workspace }) => {
-  const creds = loadStoredCredentials();
-  if (agent.model.toLowerCase().includes('claude') && creds.claudeApiKey) {
-    return await executeRealClaudePrompt(creds.claudeApiKey, prompt, `Eres ${agent.name} trabajando en ${workspace}.`);
-  }
-  if (agent.model.toLowerCase().includes('gpt') && creds.openaiApiKey) {
-    return await executeRealOpenAIPrompt(creds.openaiApiKey, prompt, `Eres ${agent.name} trabajando en ${workspace}.`);
-  }
-  const dynamicResp = generateIntelligentLocalResponse(agent, prompt, workspace);
-  return {
-    success: true,
-    text: dynamicResp,
-    model: agent.model,
-  };
+  const systemPrompt = workspace ? `Eres ${agent.name} (${agent.role}) trabajando en ${workspace}.` : '';
+  return await executeModelPrompt(agent.model, prompt, systemPrompt, workspace);
 });
 
 // AI Arena Multi-Model Handler
@@ -153,12 +142,12 @@ ipcMain.handle('execute-arena-prompt', async (event, { prompt, workspace }) => {
 
 // AI Prompt Studio Optimizer Handler
 ipcMain.handle('optimize-prompt', async (event, { prompt, techStack }) => {
-  return optimizePromptStudio(prompt, techStack);
+  return await optimizePromptWithAI(prompt, techStack);
 });
 
 // AI Error Explainer & Fixer Handler
 ipcMain.handle('diagnose-error', async (event, { errorTrace, workspace }) => {
-  return diagnoseErrorTrace(errorTrace, workspace);
+  return await diagnoseErrorWithAI(errorTrace, workspace);
 });
 
 // AI Prompt Complexity & Multi-Agent Auto-Routing Handler
@@ -293,7 +282,9 @@ ipcMain.handle('open-in-finder', async (event, dirPath) => {
 ipcMain.handle('open-in-editor', async (event, dirPath) => {
   try {
     const target = dirPath || process.cwd();
-    exec(`code "${target}" || cursor "${target}"`);
+    execFile('open', ['-a', 'Visual Studio Code', target], (err) => {
+      if (err) execFile('open', ['-a', 'Cursor', target], () => {});
+    });
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -392,7 +383,7 @@ ipcMain.handle('get-git-branches', async (event, cwd) => {
       const branches = (stdout || '')
         .split('\n')
         .map(b => b.trim())
-        .filter(Boolean)
+        .filter(b => b && !b.includes(' -> '))
         .map(b => ({
           name: b.replace('* ', '').trim(),
           isCurrent: b.startsWith('* '),
@@ -407,7 +398,8 @@ ipcMain.handle('get-git-branches', async (event, cwd) => {
 ipcMain.handle('git-checkout-branch', async (event, { branch, cwd }) => {
   const target = cwd || process.cwd();
   return new Promise((resolve) => {
-    exec(`git checkout ${branch}`, { cwd: target }, (err, stdout, stderr) => {
+    const localName = branch.replace(/^remotes\/[^/]+\//, '');
+    execFile('git', ['checkout', localName], { cwd: target }, (err, stdout, stderr) => {
       resolve({ success: !err, output: stdout || stderr });
     });
   });
@@ -419,7 +411,7 @@ ipcMain.handle('gitflow-start-feature', async (event, { featureName, cwd }) => {
   const safeName = featureName.toLowerCase().replace(/[^a-z0-9_\-]/g, '-');
   const branchName = `feature/${safeName}`;
   return new Promise((resolve) => {
-    exec(`git checkout -b ${branchName}`, { cwd: target }, (err, stdout, stderr) => {
+    execFile('git', ['checkout', '-b', branchName], { cwd: target }, (err, stdout, stderr) => {
       resolve({ success: !err, branch: branchName, output: stdout || stderr });
     });
   });
@@ -430,8 +422,14 @@ ipcMain.handle('gitflow-finish-feature', async (event, { featureBranch, targetBr
   const target = cwd || process.cwd();
   const base = targetBranch || 'main';
   return new Promise((resolve) => {
-    exec(`git checkout ${base} && git merge --no-ff ${featureBranch} -m "merge: integrate ${featureBranch} into ${base}"`, { cwd: target }, (err, stdout, stderr) => {
-      resolve({ success: !err, output: stdout || stderr });
+    execFile('git', ['checkout', base], { cwd: target }, (checkoutErr, checkoutOut, checkoutErrOut) => {
+      if (checkoutErr) {
+        resolve({ success: false, output: checkoutErrOut || checkoutOut });
+        return;
+      }
+      execFile('git', ['merge', '--no-ff', featureBranch, '-m', `merge: integrate ${featureBranch} into ${base}`], { cwd: target }, (err, stdout, stderr) => {
+        resolve({ success: !err, output: stdout || stderr });
+      });
     });
   });
 });
@@ -441,7 +439,7 @@ ipcMain.handle('gitflow-create-release', async (event, { versionTag, cwd }) => {
   const target = cwd || process.cwd();
   const tag = versionTag.startsWith('v') ? versionTag : `v${versionTag}`;
   return new Promise((resolve) => {
-    exec(`git tag -a ${tag} -m "Release ${tag}"`, { cwd: target }, (err, stdout, stderr) => {
+    execFile('git', ['tag', '-a', tag, '-m', `Release ${tag}`], { cwd: target }, (err, stdout, stderr) => {
       resolve({ success: !err, tag, output: stdout || stderr });
     });
   });
@@ -710,23 +708,35 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
 function createSystemTray() {
   try {
     // Generate a clean 16x16 status bar template icon
-    const canvas = `
-      <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="2" width="12" height="12" rx="4" fill="black"/>
-        <circle cx="8" cy="8" r="2.5" fill="white"/>
-      </svg>
-    `;
-    const icon = nativeImage.createFromBuffer(Buffer.from(canvas));
-    icon.setTemplateImage(true);
-
-    tray = new Tray(icon);
+    // Live quotas are shown as text in the menu bar (see updateTrayQuotas).
+    tray = new Tray(nativeImage.createEmpty());
+    tray.setTitle('SideNotch');
     tray.setToolTip('SideNotch - Dynamic AI Quotas');
+    updateTrayMenu('Cargando cuotas…');
+  } catch (err) {
+    console.error('Tray creation error:', err);
+  }
+}
 
+function updateTrayQuotas(quotas) {
+  if (!tray || tray.isDestroyed()) return;
+  const parts = [];
+  const ag = quotas?.antigravity;
+  if (ag?.isLinked) parts.push(`G ${Math.min(ag.geminiModels.fiveHourRemaining, ag.geminiModels.weeklyRemaining)}%`);
+  if (quotas?.claude?.isLinked) parts.push(`C ${quotas.claude.percent}%`);
+  tray.setTitle(parts.length ? parts.join(' · ') : 'SideNotch');
+
+  const lines = [];
+  if (ag?.isLinked) lines.push(`Gemini: 5h ${ag.geminiModels.fiveHourRemaining}% · semanal ${ag.geminiModels.weeklyRemaining}%`);
+  if (quotas?.claude?.isLinked) lines.push(`Claude: 5h ${quotas.claude.fiveHourPercent}% · semanal ${quotas.claude.weeklyPercent}%`);
+  updateTrayMenu(lines.length ? lines : 'Sin cuotas detectadas');
+}
+
+function updateTrayMenu(statusLines) {
+  try {
+    const status = (Array.isArray(statusLines) ? statusLines : [statusLines]).map(label => ({ label, enabled: false }));
     const contextMenu = Menu.buildFromTemplate([
-      {
-        label: 'SideNotch Activo (79% Gemini)',
-        enabled: false,
-      },
+      ...status,
       { type: 'separator' },
       {
         label: 'Abrir Ajustes...',
@@ -871,8 +881,8 @@ function createWindow() {
     mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     mainWindow.setAlwaysOnTop(true, 'floating', 1);
 
-    // Enable full clickability on the notch overlay
-    mainWindow.setIgnoreMouseEvents(false);
+    // Start click-through; the notch re-enables mouse capture while hovered.
+    mainWindow.setIgnoreMouseEvents(true, { forward: true });
 
     const dockMenu = Menu.buildFromTemplate([
       {
@@ -927,6 +937,7 @@ function createWindow() {
     quotaCheckRunning = true;
     try {
       const quotas = await fetchAllRealAccountQuotas();
+      updateTrayQuotas(quotas);
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('quotas-updated', quotas);
       }

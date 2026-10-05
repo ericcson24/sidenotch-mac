@@ -150,7 +150,21 @@ export const NativeMacSideNotch: React.FC = () => {
     return () => clearInterval(interval);
   }, [updateTelemetry]);
 
+  // The overlay window is transparent and always on top; let clicks fall through
+  // to the apps underneath except while the pointer is over the notch.
+  const setClickThrough = (ignore: boolean) => {
+    try {
+      const electron = (window as unknown as { require?: (mod: string) => { ipcRenderer: { send: (ch: string, ...args: unknown[]) => void } } }).require?.('electron');
+      electron?.ipcRenderer.send('set-ignore-mouse-events', ignore, { forward: true });
+    } catch {}
+  };
+
+  useEffect(() => {
+    setClickThrough(true);
+  }, []);
+
   const handleMouseEnter = () => {
+    setClickThrough(false);
     if (collapseTimerRef.current) {
       clearTimeout(collapseTimerRef.current);
       collapseTimerRef.current = null;
@@ -159,6 +173,7 @@ export const NativeMacSideNotch: React.FC = () => {
   };
 
   const handleMouseLeave = () => {
+    setClickThrough(true);
     collapseTimerRef.current = setTimeout(() => {
       setIsHovered(false);
       setQuickPrompt('');
@@ -191,13 +206,13 @@ export const NativeMacSideNotch: React.FC = () => {
     try {
       const electron = (window as unknown as { require?: (mod: string) => { ipcRenderer: { invoke: (ch: string, data: any) => Promise<any> } } }).require?.('electron');
       if (electron?.ipcRenderer) {
-        const modelName = activeModel === 'antigravity' ? 'gemini-3.7-pro' : activeModel === 'claude' ? 'claude-3.7-sonnet' : 'gpt-4o';
+        const modelName = activeModel === 'antigravity' ? 'gemini' : activeModel === 'claude' ? 'claude-sonnet' : 'gpt-4o';
         const response = await electron.ipcRenderer.invoke('execute-single-agent', {
           agent: { name: activeModel, model: modelName, role: 'Asistente IA' },
           prompt: quickPrompt.trim(),
           workspace: ''
         });
-        setQuickResponse(response?.text || 'Completado con éxito.');
+        setQuickResponse(response?.success ? response.text : `⚠️ ${response?.error || 'Sin respuesta'}`);
       } else {
         setQuickResponse('Enviado.');
       }

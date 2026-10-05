@@ -8,5 +8,7 @@ export default defineConfig({
     include: ['src/__tests__/**/*.test.{ts,tsx}'],
     exclude: ['**/dist-apps/**', '**/dist/**', '**/node_modules/**', '**/dmg-build/**'],
     globals: true,
+    // Never spend the user's Claude/Gemini subscription quota from tests.
+    env: { SIDENOTCH_DISABLE_SUBSCRIPTIONS: '1' },
   },
 });
