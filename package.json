@@ -9,9 +9,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "start": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
-    "electron": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
-    "electron:prod": "vite build && electron ."
+    "start": "concurrently -k \"vite\" \"wait-on tcp:5173 && env -u ELECTRON_RUN_AS_NODE electron .\"",
+    "electron": "concurrently -k \"vite\" \"wait-on tcp:5173 && env -u ELECTRON_RUN_AS_NODE electron .\"",
+    "electron:prod": "vite build && env -u ELECTRON_RUN_AS_NODE electron ."
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
